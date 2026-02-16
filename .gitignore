@@ -28,3 +28,4 @@ contracts/cache/
 # Reference dirs (tracked separately)
 reference-bootcamp/
 reference-templates/
+bun.lock
