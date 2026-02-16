@@ -1,0 +1,10 @@
+{
+  "evms": [
+    {
+      "settlementAddress": "YOUR_DEPLOYED_CONTRACT_ADDRESS",
+      "chainSelectorName": "ethereum-testnet-sepolia",
+      "gasLimit": "500000"
+    }
+  ],
+  "serviceEndpoint": "https://api.coingecko.com/api/v3"
+}
