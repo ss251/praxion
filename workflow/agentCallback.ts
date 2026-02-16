@@ -33,7 +33,7 @@ export type Config = {
 // ABI encoding for settlement report
 // ===========================
 
-// Matches AgentGateSettlement._processReport expected encoding:
+// Matches PraxionSettlement._processReport expected encoding:
 // (address agent, bytes32 serviceHash, uint256 paymentAmount, bytes32 resultHash)
 const SETTLEMENT_PARAMS = parseAbiParameters(
   "address agent, bytes32 serviceHash, uint256 paymentAmount, bytes32 resultHash"
@@ -57,7 +57,7 @@ const MINIMUM_PAYMENT = BigInt(100000);
 
 export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
   runtime.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  runtime.log("AgentGate × CRE: Verifiable Agent Commerce Protocol");
+  runtime.log("Praxion: Verifiable Agent Commerce Protocol");
   runtime.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   try {

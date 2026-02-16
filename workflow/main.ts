@@ -1,4 +1,4 @@
-// AgentGate × CRE — Verifiable Agent Commerce Protocol
+// Praxion — Verifiable Agent Commerce Protocol
 // Main workflow entry point
 
 import { cre, Runner } from "@chainlink/cre-sdk";

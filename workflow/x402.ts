@@ -98,7 +98,7 @@ export function validatePayment(
 
 /**
  * Encode payment proof for inclusion in on-chain settlement.
- * Returns the fields needed for the AgentGateSettlement contract.
+ * Returns the fields needed for the PraxionSettlement contract.
  */
 export function paymentToSettlementFields(proof: X402PaymentProof) {
   return {

@@ -3,11 +3,11 @@ pragma solidity 0.8.24;
 
 import {ReceiverTemplate} from "./interfaces/ReceiverTemplate.sol";
 
-/// @title AgentGateSettlement
-/// @notice On-chain settlement contract for the AgentGate × CRE verifiable agent commerce protocol.
+/// @title PraxionSettlement
+/// @notice On-chain settlement contract for the Praxion × CRE verifiable agent commerce protocol.
 /// @dev Receives DON-signed reports from CRE workflows that record AI agent service executions
 ///      with x402 payment verification. Extends ReceiverTemplate for Chainlink Forwarder security.
-contract AgentGateSettlement is ReceiverTemplate {
+contract PraxionSettlement is ReceiverTemplate {
     // ================================================================
     // │                          Errors                              │
     // ================================================================

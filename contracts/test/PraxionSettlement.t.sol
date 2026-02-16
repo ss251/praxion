@@ -2,11 +2,11 @@
 pragma solidity 0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AgentGateSettlement} from "../src/AgentGateSettlement.sol";
+import {PraxionSettlement} from "../src/PraxionSettlement.sol";
 import {IReceiver} from "../src/interfaces/IReceiver.sol";
 
-contract AgentGateSettlementTest is Test {
-    AgentGateSettlement public settlement;
+contract PraxionSettlementTest is Test {
+    PraxionSettlement public settlement;
 
     address public forwarder = address(0xF0F0);
     address public owner = address(this);
@@ -32,7 +32,7 @@ contract AgentGateSettlementTest is Test {
     );
 
     function setUp() public {
-        settlement = new AgentGateSettlement(forwarder);
+        settlement = new PraxionSettlement(forwarder);
     }
 
     // ================================================================
@@ -45,7 +45,7 @@ contract AgentGateSettlementTest is Test {
 
     function test_constructor_revertsOnZeroForwarder() public {
         vm.expectRevert();
-        new AgentGateSettlement(address(0));
+        new PraxionSettlement(address(0));
     }
 
     // ================================================================
@@ -142,7 +142,7 @@ contract AgentGateSettlementTest is Test {
             abi.encodePacked(agent1, serviceHash, paymentAmount, resultHash, block.timestamp)
         );
 
-        AgentGateSettlement.Settlement memory s = settlement.getSettlement(expectedId);
+        PraxionSettlement.Settlement memory s = settlement.getSettlement(expectedId);
         assertTrue(s.exists);
         assertEq(s.agent, agent1);
         assertEq(s.serviceHash, serviceHash);

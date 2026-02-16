@@ -1,8 +1,8 @@
-# AgentGate × CRE — Verifiable Agent Commerce Protocol
+# Praxion — The Execution Layer for Autonomous AI Agents
 
 > **Chainlink Convergence Hackathon 2025**
 
-A protocol enabling AI agents to discover, pay for, and consume services with cryptographic verifiability — powered by [Chainlink CRE](https://docs.chain.link/cre) (Compute Runtime Environment) and the [x402](https://www.x402.org/) payment standard.
+AI agents discover, pay (x402), and trigger verifiable onchain workflows via Chainlink CRE with DON consensus + onchain settlement. Powered by [Chainlink CRE](https://docs.chain.link/cre) and the [x402](https://www.x402.org/) payment standard.
 
 ## The Problem
 
@@ -13,7 +13,7 @@ AI agents increasingly need to call external services (APIs, LLMs, data feeds) a
 
 ## The Solution
 
-AgentGate × CRE creates a **verifiable agent commerce layer** where:
+Praxion creates a **verifiable execution layer** where:
 
 ```
 AI Agent → HTTP Request + x402 Payment Proof
@@ -39,11 +39,11 @@ A TypeScript workflow deployed to Chainlink's DON:
 2. **x402 Validation** — Verifies payment proof from headers
 3. **Service Execution** — Calls the requested API via `HTTPClient` with DON consensus
 4. **Report Generation** — Creates a DON-signed attestation of the result
-5. **On-chain Settlement** — Writes to `AgentGateSettlement` via `EVMClient.writeReport()`
+5. **On-chain Settlement** — Writes to `PraxionSettlement` via `EVMClient.writeReport()`
 
 ### Smart Contract (`contracts/`)
 
-**`AgentGateSettlement.sol`** — Extends Chainlink's `ReceiverTemplate`:
+**`PraxionSettlement.sol`** — Extends Chainlink's `ReceiverTemplate`:
 - Receives DON-signed reports via the Chainlink Forwarder
 - Records: agent address, service hash, payment amount, result hash, timestamp
 - Emits `ServiceExecuted` and `PaymentSettled` events
@@ -98,10 +98,10 @@ cre workflow deploy --config config.staging.json
 
 ### Deploy Contract
 
-Deploy `AgentGateSettlement` to Sepolia with the Chainlink Forwarder address:
+Deploy `PraxionSettlement` to Sepolia with the Chainlink Forwarder address:
 
 ```bash
-forge create src/AgentGateSettlement.sol:AgentGateSettlement \
+forge create src/PraxionSettlement.sol:PraxionSettlement \
   --constructor-args 0x15fc6ae953e024d975e77382eeec56a9101f9f88 \
   --rpc-url $SEPOLIA_RPC \
   --private-key $PRIVATE_KEY
@@ -122,12 +122,12 @@ Then update `workflow/config.staging.json` with the deployed address.
 │   └── tsconfig.json
 ├── contracts/                   # Foundry smart contracts
 │   ├── src/
-│   │   ├── AgentGateSettlement.sol      # Settlement contract
+│   │   ├── PraxionSettlement.sol      # Settlement contract
 │   │   └── interfaces/
 │   │       ├── IReceiver.sol            # CRE receiver interface
 │   │       └── ReceiverTemplate.sol     # Base template with security
 │   ├── test/
-│   │   └── AgentGateSettlement.t.sol    # 10 passing tests
+│   │   └── PraxionSettlement.t.sol    # 10 passing tests
 │   └── foundry.toml
 ```
 
@@ -168,7 +168,7 @@ The workflow currently supports:
 
 - **[Chainlink CRE](https://docs.chain.link/cre)** — Decentralized compute with DON consensus
 - **[x402](https://www.x402.org/)** — HTTP 402 Payment Required standard for machine payments
-- **[AgentGate](https://github.com/thescoho/agentgate)** — AI agent gateway protocol
+- **[Praxion](https://github.com/ss251/praxion)** — The Execution Layer for Autonomous AI Agents
 
 ## License
 
