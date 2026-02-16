@@ -170,6 +170,63 @@ The workflow currently supports:
 - **[x402](https://www.x402.org/)** — HTTP 402 Payment Required standard for machine payments
 - **[Praxion](https://github.com/ss251/praxion)** — The Execution Layer for Autonomous AI Agents
 
+## Demo — x402 Payment Flow
+
+Run the full x402 payment flow locally on Base Sepolia:
+
+### 1. Start the x402 Server
+
+```bash
+cd server
+npm install
+npx tsx src/index.ts
+```
+
+The server starts on `http://localhost:4402` with x402-protected endpoints:
+- `GET /health` — Free health check
+- `GET /price/:coin` — Real-time price data ($0.001 USDC)
+- `GET /analysis/:coin` — Market analysis + signal ($0.001 USDC)
+
+### 2. Run the Agent Client
+
+In a new terminal, set your agent's private key (must have Base Sepolia USDC):
+
+```bash
+cd agent
+npm install
+AGENT_PRIVATE_KEY=0xYOUR_PRIVATE_KEY npx tsx src/index.ts
+```
+
+The agent will:
+1. Check server health (free)
+2. Request ETH price → gets 402 → auto-pays USDC → receives data
+3. Request BTC price → same flow
+4. Request ETH analysis → same flow
+
+### 3. See It Onchain
+
+Each paid request creates a real USDC transfer on Base Sepolia. Check:
+- Agent wallet on [Base Sepolia Explorer](https://sepolia.basescan.org/)
+- Transaction hashes logged in agent output
+
+### How It Works
+
+```
+Agent                    Server                 Facilitator (x402.org)
+  │                        │                          │
+  │── GET /price/eth ─────►│                          │
+  │◄── 402 + payment ─────│                          │
+  │    requirements        │                          │
+  │                        │                          │
+  │── GET /price/eth ─────►│                          │
+  │   + PAYMENT-SIGNATURE  │── verify ───────────────►│
+  │                        │◄── valid ────────────────│
+  │                        │                          │
+  │◄── 200 + price data ──│                          │
+  │   + PAYMENT-RESPONSE   │── settle ───────────────►│
+  │                        │◄── tx hash ──────────────│
+```
+
 ## License
 
 MIT

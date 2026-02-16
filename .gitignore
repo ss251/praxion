@@ -32,3 +32,5 @@ bun.lock
 # Frontend
 frontend/node_modules/
 frontend/.next/
+.env
+agent/.env

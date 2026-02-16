@@ -1,135 +1,101 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.20;
 
-import {ReceiverTemplate} from "./interfaces/ReceiverTemplate.sol";
+import {PraxionPolicy}        from "./PraxionPolicy.sol";
+import {PraxionAgentRegistry}  from "./PraxionAgentRegistry.sol";
 
-/// @title PraxionSettlement
-/// @notice On-chain settlement contract for the Praxion × CRE verifiable agent commerce protocol.
-/// @dev Receives DON-signed reports from CRE workflows that record AI agent service executions
-///      with x402 payment verification. Extends ReceiverTemplate for Chainlink Forwarder security.
-contract PraxionSettlement is ReceiverTemplate {
-    // ================================================================
-    // │                          Errors                              │
-    // ================================================================
+contract PraxionSettlement {
+    // ── Types ──
+    enum Verdict { APPROVE, REJECT }
 
-    error InvalidReport();
-    error DuplicateSettlement(bytes32 settlementId);
-
-    // ================================================================
-    // │                          Events                              │
-    // ================================================================
-
-    /// @notice Emitted when a service execution is settled on-chain
-    event ServiceExecuted(
-        bytes32 indexed settlementId,
-        address indexed agent,
-        bytes32 indexed serviceHash,
-        uint256 paymentAmount,
-        bytes32 resultHash,
-        uint256 timestamp
-    );
-
-    /// @notice Emitted when a payment is confirmed settled
-    event PaymentSettled(
-        bytes32 indexed settlementId,
-        address indexed agent,
-        uint256 amount
-    );
-
-    // ================================================================
-    // │                          Storage                             │
-    // ================================================================
-
-    struct Settlement {
-        address agent;
-        bytes32 serviceHash;
-        uint256 paymentAmount;
-        bytes32 resultHash;
-        uint256 timestamp;
-        bool exists;
+    struct TradeIntent {
+        address sellToken;
+        address buyToken;
+        uint256 sellAmount;
+        uint256 minBuyAmount;
+        uint256 deadline;
     }
 
-    /// @notice All settlements indexed by unique ID
-    mapping(bytes32 settlementId => Settlement) public settlements;
+    struct TradeReport {
+        bytes32     reportId;
+        address     vault;
+        address     agent;
+        Verdict     verdict;
+        TradeIntent intent;
+        uint256     navUsd6;
+        uint16      postTradeExposureBps;
+        uint256     expectedPriceUsd6;
+        uint16      slippageBps;
+        string      reason;
+        bool        exists;
+    }
 
-    /// @notice Count of settlements per agent
-    mapping(address agent => uint256 count) public agentSettlementCount;
+    // ── State ──
+    address public immutable forwarder;
+    PraxionPolicy public immutable policy;
+    PraxionAgentRegistry public immutable registry;
 
-    /// @notice Total number of settlements
-    uint256 public totalSettlements;
+    mapping(bytes32 => TradeReport) internal _reports;
 
-    /// @notice Total payment volume settled
-    uint256 public totalPaymentVolume;
+    event ReportStored(bytes32 indexed reportId, Verdict verdict, address indexed vault, address indexed agent);
+    event AgentSlashed(bytes32 indexed reportId, address indexed agent, uint256 amount);
 
-    // ================================================================
-    // │                        Constructor                           │
-    // ================================================================
+    error ONLY_FORWARDER();
 
-    /// @param _forwarderAddress Chainlink KeystoneForwarder address
-    /// @dev Sepolia: 0x15fc6ae953e024d975e77382eeec56a9101f9f88
-    constructor(address _forwarderAddress) ReceiverTemplate(_forwarderAddress) {}
+    constructor(address _forwarder, address _policy, address _registry) {
+        forwarder = _forwarder;
+        policy    = PraxionPolicy(_policy);
+        registry  = PraxionAgentRegistry(_registry);
+    }
 
-    // ================================================================
-    // │                    CRE Report Processing                     │
-    // ================================================================
+    function getReport(bytes32 reportId) external view returns (TradeReport memory) {
+        return _reports[reportId];
+    }
 
-    /// @inheritdoc ReceiverTemplate
-    /// @dev Decodes the DON-signed report and records the settlement.
-    ///      Report format: abi.encode(address agent, bytes32 serviceHash, uint256 paymentAmount, bytes32 resultHash)
-    function _processReport(bytes calldata report) internal override {
-        if (report.length < 128) revert InvalidReport();
+    function onReport(bytes calldata report) external {
+        if (msg.sender != forwarder) revert ONLY_FORWARDER();
 
         (
+            bytes32 reportId,
+            address vault,
             address agent,
-            bytes32 serviceHash,
-            uint256 paymentAmount,
-            bytes32 resultHash
-        ) = abi.decode(report, (address, bytes32, uint256, bytes32));
+            uint8   verdictU8,
+            TradeIntent memory intent,
+            uint256 navUsd6,
+            uint16  postTradeExposureBps,
+            uint256 expectedPriceUsd6,
+            uint16  slippageBps,
+            string  memory reason
+        ) = abi.decode(report, (bytes32, address, address, uint8, TradeIntent, uint256, uint16, uint256, uint16, string));
 
-        // Generate unique settlement ID
-        bytes32 settlementId = keccak256(
-            abi.encodePacked(agent, serviceHash, paymentAmount, resultHash, block.timestamp)
-        );
+        Verdict verdict = Verdict(verdictU8);
 
-        if (settlements[settlementId].exists) revert DuplicateSettlement(settlementId);
-
-        // Record settlement
-        settlements[settlementId] = Settlement({
-            agent: agent,
-            serviceHash: serviceHash,
-            paymentAmount: paymentAmount,
-            resultHash: resultHash,
-            timestamp: block.timestamp,
-            exists: true
+        _reports[reportId] = TradeReport({
+            reportId:              reportId,
+            vault:                 vault,
+            agent:                 agent,
+            verdict:               verdict,
+            intent:                intent,
+            navUsd6:               navUsd6,
+            postTradeExposureBps:  postTradeExposureBps,
+            expectedPriceUsd6:     expectedPriceUsd6,
+            slippageBps:           slippageBps,
+            reason:                reason,
+            exists:                true
         });
 
-        agentSettlementCount[agent]++;
-        totalSettlements++;
-        totalPaymentVolume += paymentAmount;
+        emit ReportStored(reportId, verdict, vault, agent);
 
-        emit ServiceExecuted(
-            settlementId,
-            agent,
-            serviceHash,
-            paymentAmount,
-            resultHash,
-            block.timestamp
-        );
-
-        emit PaymentSettled(settlementId, agent, paymentAmount);
-    }
-
-    // ================================================================
-    // │                          Getters                             │
-    // ================================================================
-
-    /// @notice Get settlement details by ID
-    function getSettlement(bytes32 settlementId) external view returns (Settlement memory) {
-        return settlements[settlementId];
-    }
-
-    /// @notice Check if a settlement exists
-    function settlementExists(bytes32 settlementId) external view returns (bool) {
-        return settlements[settlementId].exists;
+        if (verdict == Verdict.REJECT) {
+            uint16 slashBps = policy.constraints(vault).slashBpsOnReject;
+            if (slashBps > 0) {
+                uint256 staked = registry.stakeOf(agent);
+                uint256 slashAmt = (staked * slashBps) / 10_000;
+                if (slashAmt > 0) {
+                    registry.slash(agent, slashAmt, reason);
+                    emit AgentSlashed(reportId, agent, slashAmt);
+                }
+            }
+        }
     }
 }
