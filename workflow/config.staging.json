@@ -1,10 +1,14 @@
 {
   "evms": [
     {
-      "settlementAddress": "YOUR_DEPLOYED_CONTRACT_ADDRESS",
+      "settlementAddress": "YOUR_SETTLEMENT_ADDRESS",
+      "policyAddress": "YOUR_POLICY_ADDRESS",
+      "registryAddress": "YOUR_REGISTRY_ADDRESS",
+      "vaultAddress": "YOUR_VAULT_ADDRESS",
       "chainSelectorName": "ethereum-testnet-sepolia",
       "gasLimit": "500000"
     }
   ],
-  "serviceEndpoint": "https://api.coingecko.com/api/v3"
+  "priceFeedUrl1": "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+  "priceFeedUrl2": "https://api.coinpaprika.com/v1/tickers/eth-ethereum"
 }

@@ -1,17 +1,16 @@
-// Praxion — Verifiable Agent Commerce Protocol
-// Main workflow entry point
+// Praxion v2 — CRE Workflow: Cryptographically Constrained AI Trade Evaluation
+// The CRE workflow acts as the "execution court" — evaluating agent trade proposals
+// against on-chain policy constraints and writing APPROVE/REJECT verdicts.
 
 import { cre, Runner } from "@chainlink/cre-sdk";
-import { onHttpTrigger, type Config } from "./agentCallback";
+import { onHttpTrigger, type Config } from "./tradeEvalCallback";
 
 const initWorkflow = (config: Config) => {
-  // Initialize HTTP capability for receiving agent requests
+  // HTTP trigger: receives trade proposals from AI agents
   const httpCapability = new cre.capabilities.HTTPCapability();
   const httpTrigger = httpCapability.trigger({});
 
   return [
-    // HTTP Trigger: AI agents send requests with x402 payment proofs
-    // → validate payment → execute service → settle onchain → return DON-signed result
     cre.handler(httpTrigger, onHttpTrigger),
   ];
 };

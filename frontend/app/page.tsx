@@ -2,54 +2,75 @@ import Link from "next/link";
 
 const features = [
   {
-    icon: "💳",
-    title: "x402 Payments",
+    icon: "🛡️",
+    title: "Cryptographic Constraints",
     description:
-      "HTTP 402 Payment Required standard. Agents pay with stablecoins — no API keys, no subscriptions, just cryptographic payment proofs.",
+      "AI agents propose trades. CRE evaluates policy constraints under DON consensus. Vault only executes with an on-chain APPROVE report.",
   },
   {
-    icon: "🔗",
-    title: "DON Consensus",
+    icon: "⚖️",
+    title: "On-chain Verdicts",
     description:
-      "Every service call is executed by Chainlink's Decentralized Oracle Network. Multi-node consensus ensures verifiable results.",
+      "Every trade proposal gets an APPROVE or REJECT verdict written to the blockchain. No off-chain trust assumptions.",
   },
   {
-    icon: "⛓️",
-    title: "Onchain Settlement",
+    icon: "🔪",
+    title: "Stake & Slash",
     description:
-      "DON-signed reports are written onchain. Every agent-service interaction has an immutable, auditable proof.",
+      "Agents stake collateral. Policy violations trigger automatic slashing. Economic skin in the game for AI actors.",
   },
 ];
 
 const steps = [
   {
     step: "01",
-    title: "Agent Sends Request",
-    description: "AI agent sends an HTTP request with x402 payment proof and service intent.",
-    code: `POST /service
-X-PAYMENT: <base64-proof>
-{ "intent": { "service": "price-feed" } }`,
+    title: "Agent Proposes Trade",
+    description: "AI agent sends a trade intent: sell USDC, buy WETH, with amount and slippage params.",
+    code: `TradeProposal {
+  agent:     0x2080...5717
+  vault:     0x...Vault
+  sell:      1000 USDC
+  buy:       WETH
+  slippage:  0.5%
+}`,
   },
   {
     step: "02",
-    title: "DON Validates & Executes",
+    title: "CRE Evaluates Constraints",
     description:
-      "CRE workflow validates payment, executes the service across DON nodes, reaches consensus on the result.",
-    code: `✓ Payment validated: 0.10 USDC
-✓ Service executed (3/5 nodes agree)
-✓ Report signed by DON`,
+      "CRE reads policy from chain, fetches prices from 2 sources under DON consensus, checks all constraints: stake, cooldown, exposure, notional, slippage.",
+    code: `✓ Agent staked: 500 USDC
+✓ Cooldown elapsed: 120s > 60s
+✓ Asset allowed: WETH
+✓ Notional: $1,000 ≤ $1,000
+✓ Exposure: 10% ≤ 30%
+✓ Slippage: 0.18% ≤ 0.50%
+→ VERDICT: APPROVE`,
   },
   {
     step: "03",
-    title: "Onchain Settlement",
+    title: "Verdict Written On-chain",
     description:
-      "DON-signed report is written to the PraxionSettlement contract. Agent receives result + settlement proof.",
-    code: `Settlement {
-  agent: 0xA1...
-  serviceHash: 0x3f2a...
-  resultHash: 0x8b1c...
-  txHash: 0x9d4e...
+      "DON-signed report is written to PraxionSettlement via Chainlink Forwarder. If REJECT, agent stake is automatically slashed.",
+    code: `TradeReport {
+  verdict:   APPROVE
+  reportId:  0x3f2a...d4e9
+  exposure:  1000 bps
+  slippage:  18 bps
+  reason:    "ALL_CHECKS_PASSED"
+  txHash:    0x9d4e...3f2a
 }`,
+  },
+  {
+    step: "04",
+    title: "Vault Executes (or Blocks)",
+    description:
+      "Vault checks the on-chain report. APPROVE → trade executes. REJECT → reverts. No report → reverts. The vault never trusts the agent directly.",
+    code: `vault.executeTrade(intent, reportId, agent)
+  → Check: report.verdict == APPROVE ✓
+  → Check: report matches intent ✓
+  → Check: not expired, not replayed ✓
+  → SWAP EXECUTED`,
   },
 ];
 
@@ -66,19 +87,22 @@ export default function Home() {
               Chainlink Convergence Hackathon 2025
             </div>
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
-              The Execution Layer for{" "}
-              <span className="text-chainlink">Autonomous AI Agents</span>
+              The Safety Layer Between{" "}
+              <span className="text-chainlink">AI and Capital</span>
             </h1>
-            <p className="text-lg md:text-xl text-foreground/60 mb-10 max-w-2xl">
-              AI agents discover, pay, and trigger verifiable onchain workflows via
-              Chainlink CRE with DON consensus + onchain settlement.
+            <p className="text-lg md:text-xl text-foreground/60 mb-4 max-w-2xl">
+              AI agents can act. Praxion ensures they act correctly.
+            </p>
+            <p className="text-base text-foreground/40 mb-10 max-w-2xl">
+              Cryptographically constrained portfolio management via Chainlink CRE.
+              Every trade evaluated under DON consensus. Every verdict on-chain.
             </p>
             <div className="flex gap-4">
               <Link
                 href="/dashboard"
                 className="px-6 py-3 bg-chainlink hover:bg-chainlink-light rounded-lg font-medium transition-colors"
               >
-                View Dashboard →
+                Try Demo →
               </Link>
               <a
                 href="https://github.com/ss251/praxion"
@@ -99,26 +123,36 @@ export default function Home() {
         <div className="bg-card border border-card-border rounded-2xl p-8 font-mono text-sm leading-relaxed overflow-x-auto">
           <pre className="text-foreground/80">
 {`  ┌─────────────┐         ┌──────────────────────┐         ┌─────────────────────┐
-  │   AI Agent   │         │    Chainlink CRE     │         │  PraxionSettlement  │
-  │              │         │   (DON Workflow)      │         │   (Onchain)         │
+  │   AI Agent   │         │    Chainlink CRE     │         │   Smart Contracts   │
+  │              │         │   (DON Workflow)      │         │                     │
   └──────┬───────┘         └──────────┬───────────┘         └──────────┬──────────┘
          │                            │                                │
-         │  POST /service             │                                │
-         │  + x402 payment proof      │                                │
+         │  Trade Proposal            │                                │
+         │  (sell USDC, buy WETH)     │                                │
          ├───────────────────────────►│                                │
          │                            │                                │
-         │                            ├─ Validate x402 payment         │
-         │                            ├─ Execute service (consensus)   │
-         │                            ├─ Generate DON-signed report    │
+         │                            ├─ Read PraxionPolicy ──────────►│ constraints()
+         │                            ├─ Read AgentRegistry ──────────►│ isActiveAgent()
+         │                            ├─ Read Vault state ────────────►│ lastTradeTime()
          │                            │                                │
-         │                            ├───── writeReport() ───────────►│
-         │                            │                                ├─ Record settlement
-         │                            │                                ├─ Emit ServiceExecuted
-         │                            │                                ├─ Emit PaymentSettled
+         │                            ├─ Fetch ETH price (source 1)    │
+         │                            ├─ Fetch ETH price (source 2)    │
+         │                            ├─ DON consensus on price        │
+         │                            │                                │
+         │                            ├─ Evaluate all constraints      │
+         │                            ├─ Generate APPROVE/REJECT       │
+         │                            │                                │
+         │                            ├── writeReport(verdict) ───────►│ PraxionSettlement
+         │                            │                                ├─ Store TradeReport
+         │                            │                                ├─ If REJECT → slash()
          │                            │                                │
          │◄───────────────────────────┤                                │
-         │  DON-signed result         │                                │
-         │  + settlement txHash       │                                │
+         │  Verdict + reportId        │                                │
+         │                            │                                │
+         ├─── executeTrade(reportId) ─────────────────────────────────►│ PraxionVault
+         │                            │                                ├─ Verify APPROVE report
+         │                            │                                ├─ Match intent fields
+         │                            │                                ├─ Execute swap
          │                            │                                │`}
           </pre>
         </div>
@@ -126,7 +160,7 @@ export default function Home() {
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold mb-12 text-center">Key Features</h2>
+        <h2 className="text-3xl font-bold mb-12 text-center">Why Praxion</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((f) => (
             <div
@@ -165,6 +199,24 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Contracts */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <h2 className="text-3xl font-bold mb-12 text-center">Smart Contracts</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {[
+            { name: "PraxionVault", desc: "ERC-4626-style vault. Holds USDC + WETH. executeTrade() gated by on-chain APPROVE report." },
+            { name: "PraxionPolicy", desc: "Per-vault constraints: max trade, slippage, exposure, cooldown, allowed assets, slash config." },
+            { name: "PraxionAgentRegistry", desc: "Agent staking + allowlisting. stake(), unstake(), slash(). Economic accountability." },
+            { name: "PraxionSettlement", desc: "Receives DON-signed reports via Chainlink Forwarder. Stores verdicts. Triggers slashing on REJECT." },
+          ].map((c) => (
+            <div key={c.name} className="bg-card border border-card-border rounded-xl p-6">
+              <h3 className="font-mono text-chainlink font-semibold mb-2">{c.name}</h3>
+              <p className="text-foreground/60 text-sm">{c.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Tech Stack */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-card-border">
         <div className="text-center">
@@ -172,11 +224,12 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             {[
               "Chainlink CRE",
-              "x402 Standard",
+              "DON Consensus",
               "Solidity",
-              "TypeScript",
               "Foundry",
-              "Sepolia Testnet",
+              "TypeScript",
+              "Next.js",
+              "Base Sepolia",
             ].map((tech) => (
               <span
                 key={tech}
@@ -192,7 +245,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-card-border py-8">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-sm text-foreground/40">
-          <span>◆ Praxion — Chainlink Convergence Hackathon 2025</span>
+          <span>◆ Praxion — The safety layer between AI and capital</span>
           <a
             href="https://github.com/ss251/praxion"
             target="_blank"
