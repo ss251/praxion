@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #ededed;
+  --chainlink-blue: #375BD2;
+  --chainlink-blue-light: #4a6fe0;
+  --card-bg: #111118;
+  --card-border: #1e1e2e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-chainlink: var(--chainlink-blue);
+  --color-chainlink-light: var(--chainlink-blue-light);
+  --color-card: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-fade-in-delay {
+  animation: fade-in 0.6s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-2 {
+  animation: fade-in 0.6s ease-out 0.4s forwards;
+  opacity: 0;
+}
