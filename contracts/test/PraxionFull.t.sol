@@ -29,7 +29,7 @@ contract PraxionFullTest is Test {
     function setUp() public {
         usdc   = new MockERC20("USDC", "USDC", 6);
         weth   = new MockERC20("WETH", "WETH", 18);
-        router = new MockRouter();
+        router = new MockRouter(3000);
 
         policy   = new PraxionPolicy();
         registry = new PraxionAgentRegistry(address(usdc), STAKE);
