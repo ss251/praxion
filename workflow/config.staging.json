@@ -1,11 +1,15 @@
 {
   "evms": [
     {
-      "settlementAddress": "YOUR_SETTLEMENT_ADDRESS",
-      "policyAddress": "YOUR_POLICY_ADDRESS",
-      "registryAddress": "YOUR_REGISTRY_ADDRESS",
-      "vaultAddress": "YOUR_VAULT_ADDRESS",
-      "chainSelectorName": "ethereum-testnet-sepolia",
+      "settlementAddress": "0x35184a00e25Aa983e8e76Ba68867461b8FEc7bfE",
+      "policyAddress": "0x6ec4e63cA2c98d3f1EE9Da812551f5241baDAD8d",
+      "registryAddress": "0xEAc52994285aD1508EC51D4E16EfaBBCB634587a",
+      "vaultAddress": "0xF03035A13c29AAC87Bf3855A5dc54362e87126D5",
+      "usdcAddress": "0x9989309119e6e41838d31dba30e97F09419B93b2",
+      "wethAddress": "0x2e746D6a2aEcF969F6523CE0A3D4BaC0e03C1F94",
+      "agentAddress": "0x2080d5Bf878E0dF355A8105D011518b4EbA15717",
+      "chainlinkEthUsd": "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1",
+      "chainSelectorName": "ethereum-testnet-sepolia-base-1",
       "gasLimit": "500000"
     }
   ],

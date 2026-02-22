@@ -33,6 +33,10 @@ export type Config = {
     policyAddress: string;
     registryAddress: string;
     vaultAddress: string;
+    usdcAddress: string;
+    wethAddress: string;
+    agentAddress: string;
+    chainlinkEthUsd: string;
     chainSelectorName: string;
     gasLimit: string;
   }>;
@@ -145,10 +149,34 @@ const ERC20_ABI = [
   },
 ] as const;
 
+// ===========================
+// Helper: cast config string to 0x address
+// ===========================
+const addr = (s: string): `0x${string}` => s as `0x${string}`;
+
 // Report encoding: matches PraxionSettlement.onReport decoding
 const REPORT_PARAMS = parseAbiParameters(
   "bytes32 reportId, address vault, address agent, uint8 verdict, (address sellToken, address buyToken, uint256 sellAmount, uint256 minBuyAmount, uint256 deadline) intent, uint256 navUsd6, uint16 postTradeExposureBps, uint256 expectedPriceUsd6, uint16 slippageBps, string reason"
 );
+
+// ===========================
+// Chainlink AggregatorV3 ABI
+// ===========================
+const AGGREGATOR_V3_ABI = [
+  {
+    name: "latestRoundData",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "roundId", type: "uint80" },
+      { name: "answer", type: "int256" },
+      { name: "startedAt", type: "uint256" },
+      { name: "updatedAt", type: "uint256" },
+      { name: "answeredInRound", type: "uint80" },
+    ],
+  },
+] as const;
 
 // ===========================
 // Price fetching
@@ -227,7 +255,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
     });
     const policyResult = evmClient
       .callContract(runtime, {
-        call: encodeCallMsg({ from: zeroAddress, to: evmConfig.policyAddress, data: policyData }),
+        call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.policyAddress), data: policyData }),
       })
       .result();
     const policyRaw = decodeFunctionResult({
@@ -256,7 +284,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
     });
     const agentActiveResult = evmClient
       .callContract(runtime, {
-        call: encodeCallMsg({ from: zeroAddress, to: evmConfig.registryAddress, data: agentActiveData }),
+        call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.registryAddress), data: agentActiveData }),
       })
       .result();
     const isActive = decodeFunctionResult({
@@ -275,7 +303,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
     });
     const stakeResult = evmClient
       .callContract(runtime, {
-        call: encodeCallMsg({ from: zeroAddress, to: evmConfig.registryAddress, data: stakeData }),
+        call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.registryAddress), data: stakeData }),
       })
       .result();
     const agentStake = decodeFunctionResult({
@@ -294,7 +322,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
     });
     const lastTradeResult = evmClient
       .callContract(runtime, {
-        call: encodeCallMsg({ from: zeroAddress, to: evmConfig.vaultAddress, data: lastTradeData }),
+        call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.vaultAddress), data: lastTradeData }),
       })
       .result();
     const lastTradeTime = decodeFunctionResult({
@@ -315,7 +343,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
       });
       const allowedResult = evmClient
         .callContract(runtime, {
-          call: encodeCallMsg({ from: zeroAddress, to: evmConfig.policyAddress, data: allowedData }),
+          call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.policyAddress), data: allowedData }),
         })
         .result();
       assetAllowed = decodeFunctionResult({
@@ -337,7 +365,7 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
     // In production you'd read both token balances and compute full NAV
     const usdcBalResult = evmClient
       .callContract(runtime, {
-        call: encodeCallMsg({ from: zeroAddress, to: proposal.sellToken, data: usdcBalData }),
+        call: encodeCallMsg({ from: zeroAddress, to: addr(proposal.sellToken), data: usdcBalData }),
       })
       .result();
     const vaultUsdcBalance = decodeFunctionResult({
@@ -348,9 +376,34 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
 
     runtime.log(`[Step 2f] Vault USDC balance: ${vaultUsdcBalance}`);
 
-    // ─── Step 3: Fetch prices from 2 sources (DON consensus) ───
-    runtime.log("[Step 3] Fetching prices from 2 sources...");
+    // ─── Step 3: Fetch prices from 3 sources (DON consensus) ───
+    // Source 1: Chainlink on-chain ETH/USD feed (real data feed)
+    // Source 2: CoinGecko API (HTTP with DON consensus)
+    // Source 3: CoinPaprika API (HTTP with DON consensus)
+    runtime.log("[Step 3] Fetching prices from 3 sources...");
 
+    // 3a. Read Chainlink ETH/USD price on-chain
+    const chainlinkCallData = encodeFunctionData({
+      abi: AGGREGATOR_V3_ABI,
+      functionName: "latestRoundData",
+      args: [],
+    });
+    const chainlinkResult = evmClient
+      .callContract(runtime, {
+        call: encodeCallMsg({ from: zeroAddress, to: addr(evmConfig.chainlinkEthUsd), data: chainlinkCallData }),
+      })
+      .result();
+    const chainlinkRaw = decodeFunctionResult({
+      abi: AGGREGATOR_V3_ABI,
+      functionName: "latestRoundData",
+      data: bytesToHex(chainlinkResult.data),
+    }) as any;
+    // Chainlink ETH/USD has 8 decimals
+    const chainlinkPriceUsd = Number(chainlinkRaw.answer) / 1e8;
+
+    runtime.log(`[Step 3a] Chainlink on-chain ETH/USD: $${chainlinkPriceUsd.toFixed(2)}`);
+
+    // 3b. CoinGecko price (HTTP with DON consensus)
     const httpClient = new cre.capabilities.HTTPClient();
 
     const price1 = httpClient
@@ -361,6 +414,9 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
       )(runtime.config)
       .result();
 
+    runtime.log(`[Step 3b] CoinGecko ETH/USD: $${price1.priceUsd}`);
+
+    // 3c. CoinPaprika price (HTTP with DON consensus)
     const price2 = httpClient
       .sendRequest(
         runtime,
@@ -369,14 +425,20 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
       )(runtime.config)
       .result();
 
-    // Average of 2 sources
-    const avgPrice = (price1.priceUsd + price2.priceUsd) / 2;
-    const expectedPriceUsd6 = BigInt(Math.round(avgPrice * 1e6));
+    runtime.log(`[Step 3c] CoinPaprika ETH/USD: $${price2.priceUsd}`);
 
-    runtime.log(`[Step 3] Price source 1: $${price1.priceUsd}`);
-    runtime.log(`[Step 3] Price source 2: $${price2.priceUsd}`);
-    runtime.log(`[Step 3] Average price: $${avgPrice} (${expectedPriceUsd6} USD6)`);
+    // 3d. Median of 3 sources (DON consensus pattern)
+    const prices = [chainlinkPriceUsd, price1.priceUsd, price2.priceUsd].sort((a, b) => a - b);
+    const medianPrice = prices[1]; // Middle value = median
+    const expectedPriceUsd6 = BigInt(Math.round(medianPrice * 1e6));
 
+    // Calculate max divergence between sources (slippage metric)
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const sourceDivergenceBps = Math.round(((maxPrice - minPrice) / medianPrice) * 10000);
+
+    runtime.log(`[Step 3d] Median price: $${medianPrice.toFixed(2)} (${expectedPriceUsd6} USD6)`);
+    runtime.log(`[Step 3d] Source divergence: ${sourceDivergenceBps} bps`);
     // ─── Step 4: Evaluate constraints ───
     runtime.log("[Step 4] Evaluating constraints...");
 

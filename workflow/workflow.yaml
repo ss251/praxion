@@ -1,0 +1,13 @@
+# ==========================================================================
+# Praxion CRE Workflow Settings
+# ==========================================================================
+# Cryptographically Constrained AI Trade Evaluation
+# The CRE workflow acts as the "execution court" for AI agent trade proposals.
+
+staging-settings:
+  user-workflow:
+    workflow-name: "praxion-trade-eval-staging"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: "../secrets.yaml"
