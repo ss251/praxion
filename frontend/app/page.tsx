@@ -1,430 +1,306 @@
 import Link from "next/link";
 
-const CONTRACTS = [
+/* ─── Data ─── */
+const FLOW = [
   {
-    name: "PraxionVault",
-    role: "Capital Custodian",
-    desc: "Holds USDC + WETH. executeTrade() is gated — only fires with a matching on-chain APPROVE report. No report, no execution.",
-    color: "chainlink",
+    n: "01",
+    title: "Propose",
+    sub: "Agent submits trade intent",
+    detail: "sell 1,000 USDC → buy WETH · slippage ≤ 0.50%",
   },
   {
-    name: "PraxionPolicy",
-    role: "Constraint Engine",
-    desc: "Per-vault rules: max trade size, slippage tolerance, exposure limits, cooldown periods, allowed asset whitelist.",
-    color: "chainlink",
+    n: "02",
+    title: "Read State",
+    sub: "CRE queries on-chain constraints",
+    detail: "Policy.constraints() · Registry.isActiveAgent() · Vault.lastTradeTime()",
   },
   {
-    name: "PraxionSettlement",
-    role: "Verdict Recorder",
-    desc: "Receives DON-signed reports via Chainlink Forwarder. Stores every APPROVE and REJECT. Triggers slashing on violations.",
-    color: "chainlink",
+    n: "03",
+    title: "Price Consensus",
+    sub: "3 sources → median price",
+    detail: "Chainlink $1,950.24 · CoinGecko $1,950.69 · CoinPaprika $1,949.60",
   },
   {
-    name: "AgentRegistry",
-    role: "Accountability Layer",
-    desc: "Agents stake collateral to act. Violations trigger automatic slashing. Economic skin in the game for every AI actor.",
-    color: "chainlink",
+    n: "04",
+    title: "Verdict",
+    sub: "APPROVE or REJECT on-chain",
+    detail: "APPROVE → vault executes · REJECT → agent stake slashed 10%",
   },
 ];
 
+const CONTRACTS = [
+  ["PraxionVault", "Holds capital. executeTrade() gated by on-chain APPROVE report."],
+  ["PraxionPolicy", "Per-vault constraints: max trade, slippage, exposure, cooldown."],
+  ["PraxionSettlement", "Stores DON-signed verdicts. Triggers slashing on REJECT."],
+  ["AgentRegistry", "Stake-based accountability. Slash on violation."],
+];
+
+const STACK = [
+  "Chainlink CRE",
+  "Data Feeds",
+  "DON Consensus",
+  "Solidity",
+  "Foundry",
+  "Next.js",
+  "viem",
+  "Base Sepolia",
+];
+
+/* ─── Page ─── */
 export default function Home() {
   return (
-    <div className="min-h-screen relative grid-bg">
-      {/* ─── HERO ─── */}
-      <section className="relative overflow-hidden">
-        {/* Gradient orbs */}
-        <div className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-chainlink/[0.04] blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-100px] left-[-200px] w-[500px] h-[500px] rounded-full bg-accent-green/[0.02] blur-[100px] pointer-events-none" />
+    <div className="min-h-screen">
+      {/* ━━━ HERO ━━━ */}
+      <section className="relative overflow-hidden dot-grid">
+        {/* Accent glow */}
+        <div className="absolute top-32 left-1/2 -translate-x-1/2 w-[480px] h-[480px] rounded-full opacity-[0.07] blur-[100px] pointer-events-none"
+          style={{ background: "radial-gradient(circle, var(--blue), transparent 70%)" }} />
 
-        <div className="max-w-7xl mx-auto px-6 pt-32 pb-24 md:pt-44 md:pb-32 relative z-10">
-          <div className="max-w-4xl">
-            {/* Badge */}
-            <div className="animate-fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-chainlink/20 bg-chainlink/[0.06] mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
-              <span className="text-xs tracking-widest uppercase" style={{ fontFamily: "var(--font-jetbrains)", color: "var(--text-muted)" }}>
-                Chainlink Convergence Hackathon 2026
-              </span>
-            </div>
+        <div className="relative max-w-6xl mx-auto px-6 pt-28 pb-20 md:pt-40 md:pb-28">
+          {/* Eyebrow */}
+          <div className="anim-enter flex items-center gap-2 mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]" />
+            <span className="label">Chainlink Convergence Hackathon 2026</span>
+          </div>
 
-            {/* Headline */}
-            <h1
-              className="animate-fade-up text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[0.95] mb-8"
-              style={{ fontFamily: "var(--font-syne)", animationDelay: "0.1s", opacity: 0 }}
-            >
-              The safety layer
-              <br />
-              between{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-chainlink to-chainlink-light animate-gradient">
-                AI
-              </span>{" "}
-              and{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-green to-[#00c864]">
-                capital
-              </span>
-            </h1>
+          {/* Headline — Fraunces optical size shines here */}
+          <h1
+            className="anim-enter anim-d1 text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.05] tracking-[-0.025em] font-semibold max-w-[820px] mb-8"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            The safety layer between AI and capital
+          </h1>
 
-            {/* Subhead */}
-            <p
-              className="animate-fade-up text-lg md:text-xl leading-relaxed max-w-2xl mb-12"
-              style={{ fontFamily: "var(--font-dm)", color: "var(--text-muted)", animationDelay: "0.2s", opacity: 0 }}
-            >
-              AI agents propose trades. Chainlink CRE evaluates every constraint under DON consensus.
-              Vault only executes with an on-chain APPROVE verdict. Violations get slashed.
-            </p>
+          {/* Sub */}
+          <p className="anim-enter anim-d2 text-[17px] leading-relaxed max-w-xl mb-10"
+            style={{ color: "var(--muted)", fontFamily: "var(--font-body)" }}>
+            AI agents propose trades. Chainlink CRE evaluates constraints under DON consensus.
+            The vault only executes with an on-chain APPROVE verdict. Violations get slashed.
+          </p>
 
-            {/* CTAs */}
-            <div className="animate-fade-up flex flex-wrap gap-4" style={{ animationDelay: "0.3s", opacity: 0 }}>
-              <Link
-                href="/dashboard"
-                className="group px-7 py-3.5 bg-chainlink hover:bg-chainlink-light rounded-lg font-semibold text-sm tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(55,91,210,0.3)]"
-                style={{ fontFamily: "var(--font-syne)" }}
-              >
-                Launch Dashboard
-                <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
-              </Link>
-              <a
-                href="https://github.com/ss251/praxion"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-7 py-3.5 border border-card-border hover:border-chainlink/40 rounded-lg font-medium text-sm tracking-wide text-muted hover:text-foreground transition-all duration-300"
-                style={{ fontFamily: "var(--font-syne)" }}
-              >
-                View Source
-              </a>
-            </div>
+          {/* CTA row */}
+          <div className="anim-enter anim-d3 flex flex-wrap gap-3">
+            <Link href="/dashboard"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-200"
+              style={{
+                background: "var(--blue)",
+                fontFamily: "var(--font-body)",
+                boxShadow: "0 0 0 1px rgba(55,91,210,0.3), 0 1px 2px rgba(0,0,0,0.4)",
+              }}>
+              Launch Dashboard
+              <span className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+            <a href="https://github.com/ss251/praxion" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-200 hover:bg-white/[0.04]"
+              style={{
+                border: "1px solid var(--border)",
+                color: "var(--muted)",
+                fontFamily: "var(--font-body)",
+              }}>
+              View Source
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ─── LIVE STATS RIBBON ─── */}
-      <section className="border-y border-card-border/50 bg-card/30 backdrop-blur-sm relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-6">
+      {/* ━━━ STATS BAR ━━━ */}
+      <section style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+        <div className="max-w-6xl mx-auto px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
-            { label: "Price Oracle", value: "Chainlink ETH/USD", sub: "Live on Base Sepolia" },
-            { label: "DON Sources", value: "3", sub: "Chainlink · CoinGecko · CoinPaprika" },
-            { label: "Contracts", value: "8", sub: "Deployed & verified" },
-            { label: "Tests", value: "33/33", sub: "Forge passing" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex items-center gap-3">
-              <div className="w-px h-8 bg-card-border hidden md:block first:hidden" />
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted" style={{ fontFamily: "var(--font-jetbrains)" }}>
-                  {stat.label}
-                </div>
-                <div className="text-sm font-bold" style={{ fontFamily: "var(--font-syne)" }}>
-                  {stat.value}
-                </div>
-                <div className="text-[10px] text-muted" style={{ fontFamily: "var(--font-dm)" }}>
-                  {stat.sub}
-                </div>
+            ["Oracle", "Chainlink ETH/USD", "Live on-chain feed"],
+            ["Sources", "3", "Chainlink · CoinGecko · CoinPaprika"],
+            ["Contracts", "8 deployed", "Base Sepolia testnet"],
+            ["Tests", "33 / 33", "Forge passing"],
+          ].map(([label, val, sub]) => (
+            <div key={label}>
+              <div className="label mb-1">{label}</div>
+              <div className="text-[15px] font-medium" style={{ fontFamily: "var(--font-body)" }}>{val}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "var(--dim)", fontFamily: "var(--font-mono)" }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ━━━ FLOW ━━━ */}
+      <section className="max-w-6xl mx-auto px-6 py-24">
+        <div className="mb-14">
+          <span className="label">Protocol Flow</span>
+          <h2 className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight mt-2" style={{ fontFamily: "var(--font-display)" }}>
+            Four steps, zero trust
+          </h2>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-px" style={{ background: "var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+          {FLOW.map((step) => (
+            <div key={step.n} className="p-6 md:p-7 flex flex-col" style={{ background: "var(--card)" }}>
+              <span className="text-[28px] font-semibold tracking-tight mb-4"
+                style={{ fontFamily: "var(--font-display)", color: "var(--blue-soft)", opacity: 0.5 }}>
+                {step.n}
+              </span>
+              <h3 className="text-[17px] font-semibold mb-1" style={{ fontFamily: "var(--font-body)" }}>
+                {step.title}
+              </h3>
+              <p className="text-[13px] mb-4" style={{ color: "var(--muted)", fontFamily: "var(--font-body)" }}>
+                {step.sub}
+              </p>
+              <div className="mt-auto pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                <code className="text-[11px] leading-relaxed block" style={{ color: "var(--dim)", fontFamily: "var(--font-mono)" }}>
+                  {step.detail}
+                </code>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─── HOW IT WORKS — TIMELINE ─── */}
-      <section className="max-w-7xl mx-auto px-6 py-28 relative z-10">
-        <div className="mb-16">
-          <span
-            className="text-xs tracking-[0.25em] uppercase text-chainlink"
-            style={{ fontFamily: "var(--font-jetbrains)" }}
-          >
-            Protocol Flow
-          </span>
-          <h2 className="text-4xl md:text-5xl font-extrabold mt-3 tracking-tight" style={{ fontFamily: "var(--font-syne)" }}>
-            Four steps. Zero trust.
+      {/* ━━━ ARCHITECTURE ━━━ */}
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="mb-10">
+          <span className="label">System Design</span>
+          <h2 className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight mt-2" style={{ fontFamily: "var(--font-display)" }}>
+            Architecture
           </h2>
         </div>
 
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-[23px] md:left-[31px] top-0 bottom-0 w-px bg-gradient-to-b from-chainlink/40 via-chainlink/20 to-transparent" />
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <div className="p-6 md:p-10 overflow-x-auto">
+            <svg viewBox="0 0 860 480" className="w-full min-w-[600px]" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="a" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#4b6ee0" />
+                </marker>
+                <marker id="ag" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#34d399" />
+                </marker>
+                <marker id="ar" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+                  <polygon points="0 0, 6 2, 0 4" fill="#f87171" />
+                </marker>
+              </defs>
 
-          <div className="space-y-12">
-            {[
-              {
-                num: "01",
-                title: "Agent Proposes Trade",
-                desc: "AI agent submits a trade intent — asset pair, amount, slippage tolerance. The proposal enters the CRE pipeline.",
-                detail: "sell: 1,000 USDC → buy: WETH\nslippage: ≤ 0.50%",
-                accent: "chainlink",
-              },
-              {
-                num: "02",
-                title: "CRE Reads On-chain State",
-                desc: "Chainlink CRE reads policy constraints, agent registry, and vault state directly from smart contracts. No off-chain assumptions.",
-                detail: "PraxionPolicy.constraints(vault)\nAgentRegistry.isActiveAgent(agent)\nVault.lastTradeTime(agent)",
-                accent: "chainlink",
-              },
-              {
-                num: "03",
-                title: "DON Consensus on Price",
-                desc: "Three independent price sources — Chainlink on-chain feed, CoinGecko, CoinPaprika — converge to a median. Divergence becomes the slippage metric.",
-                detail: "Chainlink: $1,950.24\nCoinGecko:  $1,950.69\nCoinPaprika: $1,949.60\n─────────────────────\nConsensus:  $1,950.24  (0.06%)",
-                accent: "accent-green",
-              },
-              {
-                num: "04",
-                title: "Verdict → Execute or Slash",
-                desc: "CRE evaluates all constraints and writes an APPROVE or REJECT report on-chain. APPROVE unlocks the vault. REJECT triggers automatic stake slashing.",
-                detail: "APPROVE → vault.executeTrade(reportId)\nREJECT  → registry.slash(agent, 10%)",
-                accent: "accent-red",
-              },
-            ].map((step, i) => (
-              <div key={step.num} className="relative flex gap-6 md:gap-10">
-                {/* Number circle */}
-                <div className="relative z-10 flex-shrink-0">
-                  <div
-                    className={`w-12 h-12 md:w-16 md:h-16 rounded-xl border-2 flex items-center justify-center ${
-                      step.accent === "accent-green"
-                        ? "border-accent-green/40 bg-accent-green/[0.06]"
-                        : step.accent === "accent-red"
-                        ? "border-accent-red/40 bg-accent-red/[0.06]"
-                        : "border-chainlink/40 bg-chainlink/[0.06]"
-                    }`}
-                  >
-                    <span
-                      className={`text-lg md:text-xl font-bold ${
-                        step.accent === "accent-green"
-                          ? "text-accent-green"
-                          : step.accent === "accent-red"
-                          ? "text-accent-red"
-                          : "text-chainlink"
-                      }`}
-                      style={{ fontFamily: "var(--font-jetbrains)" }}
-                    >
-                      {step.num}
-                    </span>
-                  </div>
-                </div>
+              {/* Column labels */}
+              <text x="110" y="28" textAnchor="middle" fill="#64647a" fontSize="10" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.08em">AI AGENT</text>
+              <text x="420" y="28" textAnchor="middle" fill="#64647a" fontSize="10" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.08em">CHAINLINK CRE</text>
+              <text x="730" y="28" textAnchor="middle" fill="#64647a" fontSize="10" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.08em">SMART CONTRACTS</text>
 
-                {/* Content */}
-                <div className="flex-1 pb-4">
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight" style={{ fontFamily: "var(--font-syne)" }}>
-                    {step.title}
-                  </h3>
-                  <p className="text-muted leading-relaxed mb-4 max-w-xl" style={{ fontFamily: "var(--font-dm)" }}>
-                    {step.desc}
-                  </p>
-                  <div className="inline-block bg-card border border-card-border rounded-lg px-5 py-3">
-                    <pre
-                      className="text-xs md:text-sm whitespace-pre"
-                      style={{
-                        fontFamily: "var(--font-jetbrains)",
-                        color: step.accent === "accent-green" ? "var(--accent-green)" : step.accent === "accent-red" ? "var(--accent-red)" : "var(--chainlink-blue-light)",
-                        lineHeight: "1.6",
-                      }}
-                    >
-                      {step.detail}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            ))}
+              {/* Boxes */}
+              <rect x="30" y="38" width="160" height="36" rx="6" fill="none" stroke="#375BD230" strokeWidth="1" />
+              <text x="110" y="61" textAnchor="middle" fill="#e4e4e8" fontSize="12" fontFamily="Outfit, sans-serif" fontWeight="500">Trade Proposer</text>
+
+              <rect x="330" y="38" width="180" height="36" rx="6" fill="none" stroke="#375BD240" strokeWidth="1" />
+              <text x="420" y="61" textAnchor="middle" fill="#e4e4e8" fontSize="12" fontFamily="Outfit, sans-serif" fontWeight="500">DON Consensus Judge</text>
+
+              <rect x="650" y="38" width="160" height="36" rx="6" fill="none" stroke="#34d39930" strokeWidth="1" />
+              <text x="730" y="61" textAnchor="middle" fill="#e4e4e8" fontSize="12" fontFamily="Outfit, sans-serif" fontWeight="500">On-chain Contracts</text>
+
+              {/* Lifelines */}
+              <line x1="110" y1="74" x2="110" y2="460" stroke="#ffffff08" strokeWidth="1" />
+              <line x1="420" y1="74" x2="420" y2="460" stroke="#ffffff08" strokeWidth="1" />
+              <line x1="730" y1="74" x2="730" y2="460" stroke="#ffffff08" strokeWidth="1" />
+
+              {/* Step 1: Propose */}
+              <line x1="190" y1="110" x2="330" y2="110" stroke="#4b6ee0" strokeWidth="1" markerEnd="url(#a)" />
+              <text x="260" y="104" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">Trade Proposal</text>
+
+              {/* Step 2: Read state */}
+              <line x1="510" y1="150" x2="650" y2="150" stroke="#34d399" strokeWidth="1" markerEnd="url(#ag)" strokeDasharray="4 3" />
+              <text x="580" y="144" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">constraints()</text>
+
+              <line x1="510" y1="175" x2="650" y2="175" stroke="#34d399" strokeWidth="1" markerEnd="url(#ag)" strokeDasharray="4 3" />
+              <text x="580" y="169" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">isActiveAgent()</text>
+
+              <line x1="510" y1="200" x2="650" y2="200" stroke="#34d399" strokeWidth="1" markerEnd="url(#ag)" strokeDasharray="4 3" />
+              <text x="580" y="194" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">lastTradeTime()</text>
+
+              {/* Step 3: Price consensus */}
+              <rect x="345" y="230" width="150" height="48" rx="6" fill="#375BD208" stroke="#375BD220" strokeWidth="1" />
+              <text x="420" y="250" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">3-SOURCE CONSENSUS</text>
+              <text x="420" y="268" textAnchor="middle" fill="#4b6ee0" fontSize="11" fontFamily="IBM Plex Mono, monospace" fontWeight="500">$1,950.24</text>
+
+              {/* Step 4: Evaluate */}
+              <rect x="345" y="296" width="150" height="36" rx="6" fill="#375BD20C" stroke="#375BD230" strokeWidth="1" />
+              <text x="420" y="310" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">EVALUATE</text>
+              <text x="420" y="324" textAnchor="middle" fill="#e4e4e8" fontSize="10" fontFamily="Outfit, sans-serif">Check all constraints</text>
+
+              {/* Write verdict */}
+              <line x1="495" y1="345" x2="650" y2="365" stroke="#4b6ee0" strokeWidth="1" markerEnd="url(#a)" />
+              <rect x="650" y="352" width="160" height="36" rx="6" fill="#375BD208" stroke="#375BD220" strokeWidth="1" />
+              <text x="730" y="366" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">SETTLEMENT</text>
+              <text x="730" y="380" textAnchor="middle" fill="#e4e4e8" fontSize="10" fontFamily="Outfit, sans-serif">Store verdict report</text>
+
+              {/* Slash */}
+              <rect x="670" y="396" width="120" height="24" rx="4" fill="#f8717108" stroke="#f8717120" strokeWidth="1" />
+              <text x="730" y="413" textAnchor="middle" fill="#f87171" fontSize="9" fontFamily="IBM Plex Mono, monospace">REJECT → slash()</text>
+
+              {/* Verdict back */}
+              <line x1="330" y1="380" x2="190" y2="380" stroke="#4b6ee0" strokeWidth="1" markerEnd="url(#a)" />
+              <text x="260" y="374" textAnchor="middle" fill="#64647a" fontSize="9" fontFamily="IBM Plex Mono, monospace">verdict + reportId</text>
+
+              {/* Execute */}
+              <line x1="190" y1="430" x2="650" y2="440" stroke="#34d399" strokeWidth="1" markerEnd="url(#ag)" />
+              <text x="400" y="424" textAnchor="middle" fill="#34d399" fontSize="9" fontFamily="IBM Plex Mono, monospace" opacity="0.6">executeTrade(reportId)</text>
+
+              <rect x="650" y="430" width="160" height="30" rx="6" fill="#34d39908" stroke="#34d39920" strokeWidth="1" />
+              <text x="730" y="450" textAnchor="middle" fill="#34d399" fontSize="10" fontFamily="Outfit, sans-serif" fontWeight="500">Verify → Swap</text>
+            </svg>
           </div>
         </div>
       </section>
 
-      {/* ─── ARCHITECTURE SVG ─── */}
-      <section className="max-w-7xl mx-auto px-6 py-20 relative z-10">
-        <div className="mb-12">
-          <span
-            className="text-xs tracking-[0.25em] uppercase text-chainlink"
-            style={{ fontFamily: "var(--font-jetbrains)" }}
-          >
-            System Design
-          </span>
-          <h2 className="text-4xl md:text-5xl font-extrabold mt-3 tracking-tight" style={{ fontFamily: "var(--font-syne)" }}>
-            Architecture
-          </h2>
-        </div>
-        <div className="bg-card border border-card-border rounded-2xl p-6 md:p-10 glow-blue overflow-x-auto">
-          <svg viewBox="0 0 900 560" className="w-full max-w-4xl mx-auto" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <marker id="arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-                <polygon points="0 0, 7 2.5, 0 5" fill="#5a7de8" />
-              </marker>
-              <marker id="arr-g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-                <polygon points="0 0, 7 2.5, 0 5" fill="#00e676" />
-              </marker>
-              <marker id="arr-r" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-                <polygon points="0 0, 7 2.5, 0 5" fill="#ff3d57" />
-              </marker>
-            </defs>
-
-            {/* Columns */}
-            <rect x="30" y="16" width="180" height="52" rx="10" fill="#375BD210" stroke="#375BD250" strokeWidth="1" />
-            <text x="120" y="36" textAnchor="middle" fill="#6b6b80" fontSize="10" fontFamily="JetBrains Mono, monospace" letterSpacing="0.1em">AI AGENT</text>
-            <text x="120" y="54" textAnchor="middle" fill="#e8e8ed" fontSize="13" fontWeight="700" fontFamily="Syne, sans-serif">Trade Proposer</text>
-
-            <rect x="330" y="16" width="220" height="52" rx="10" fill="#375BD218" stroke="#375BD260" strokeWidth="1" />
-            <text x="440" y="36" textAnchor="middle" fill="#6b6b80" fontSize="10" fontFamily="JetBrains Mono, monospace" letterSpacing="0.1em">CHAINLINK CRE</text>
-            <text x="440" y="54" textAnchor="middle" fill="#e8e8ed" fontSize="13" fontWeight="700" fontFamily="Syne, sans-serif">DON Consensus Judge</text>
-
-            <rect x="670" y="16" width="200" height="52" rx="10" fill="#00e67610" stroke="#00e67640" strokeWidth="1" />
-            <text x="770" y="36" textAnchor="middle" fill="#6b6b80" fontSize="10" fontFamily="JetBrains Mono, monospace" letterSpacing="0.1em">ON-CHAIN</text>
-            <text x="770" y="54" textAnchor="middle" fill="#e8e8ed" fontSize="13" fontWeight="700" fontFamily="Syne, sans-serif">Smart Contracts</text>
-
-            {/* Lifelines */}
-            <line x1="120" y1="68" x2="120" y2="540" stroke="#375BD2" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.25" />
-            <line x1="440" y1="68" x2="440" y2="540" stroke="#375BD2" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.25" />
-            <line x1="770" y1="68" x2="770" y2="540" stroke="#00e676" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.25" />
-
-            {/* 1: Proposal */}
-            <rect x="44" y="100" width="152" height="40" rx="6" fill="#375BD20C" stroke="#375BD240" strokeWidth="0.8" />
-            <text x="120" y="116" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">STEP 01</text>
-            <text x="120" y="132" textAnchor="middle" fill="#e8e8ed" fontSize="11" fontWeight="600">Trade Proposal</text>
-            <line x1="196" y1="120" x2="330" y2="120" stroke="#5a7de8" strokeWidth="1.2" markerEnd="url(#arr)" />
-            <text x="263" y="112" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">sell USDC → buy WETH</text>
-
-            {/* 2: Read chain */}
-            <rect x="350" y="160" width="180" height="32" rx="5" fill="#00e67608" stroke="#00e67630" strokeWidth="0.8" />
-            <text x="440" y="181" textAnchor="middle" fill="#86efac" fontSize="10" fontFamily="JetBrains Mono, monospace">Read Policy + Registry</text>
-            <line x1="530" y1="176" x2="670" y2="176" stroke="#00e676" strokeWidth="0.8" markerEnd="url(#arr-g)" strokeDasharray="5 3" />
-
-            <rect x="350" y="202" width="180" height="32" rx="5" fill="#00e67608" stroke="#00e67630" strokeWidth="0.8" />
-            <text x="440" y="223" textAnchor="middle" fill="#86efac" fontSize="10" fontFamily="JetBrains Mono, monospace">Read Vault State</text>
-            <line x1="530" y1="218" x2="670" y2="218" stroke="#00e676" strokeWidth="0.8" markerEnd="url(#arr-g)" strokeDasharray="5 3" />
-
-            {/* 3: Price consensus */}
-            <rect x="340" y="258" width="200" height="54" rx="7" fill="#375BD210" stroke="#375BD250" strokeWidth="1" />
-            <text x="440" y="276" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">STEP 02 — PRICE CONSENSUS</text>
-            <text x="440" y="292" textAnchor="middle" fill="#e8e8ed" fontSize="10">Chainlink + CoinGecko + CoinPaprika</text>
-            <text x="440" y="305" textAnchor="middle" fill="#5a7de8" fontSize="9" fontFamily="JetBrains Mono, monospace">median → $1,950.24</text>
-
-            {/* 4: Evaluate */}
-            <rect x="340" y="332" width="200" height="54" rx="7" fill="#375BD218" stroke="#375BD270" strokeWidth="1.2" />
-            <text x="440" y="350" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">STEP 03 — EVALUATE</text>
-            <text x="440" y="366" textAnchor="middle" fill="#e8e8ed" fontSize="11" fontWeight="600">Check All Constraints</text>
-            <text x="440" y="380" textAnchor="middle" fill="#6b6b80" fontSize="9">stake · cooldown · exposure · slippage</text>
-
-            {/* 5: Write verdict */}
-            <line x1="540" y1="386" x2="670" y2="416" stroke="#5a7de8" strokeWidth="1.2" markerEnd="url(#arr)" />
-            <rect x="670" y="404" width="200" height="44" rx="7" fill="#375BD210" stroke="#375BD250" strokeWidth="1" />
-            <text x="770" y="422" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">PraxionSettlement</text>
-            <text x="770" y="438" textAnchor="middle" fill="#e8e8ed" fontSize="11" fontWeight="500">Store Verdict Report</text>
-
-            {/* Slash */}
-            <rect x="694" y="456" width="152" height="26" rx="5" fill="#ff3d5714" stroke="#ff3d5740" strokeWidth="0.8" />
-            <text x="770" y="474" textAnchor="middle" fill="#fca5a5" fontSize="10" fontWeight="500">If REJECT → slash()</text>
-
-            {/* Verdict back */}
-            <line x1="330" y1="430" x2="196" y2="430" stroke="#5a7de8" strokeWidth="1.2" markerEnd="url(#arr)" />
-            <text x="263" y="422" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">verdict + reportId</text>
-
-            {/* 6: Execute */}
-            <rect x="44" y="460" width="152" height="40" rx="6" fill="#00e67610" stroke="#00e67640" strokeWidth="1" />
-            <text x="120" y="476" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">STEP 04</text>
-            <text x="120" y="492" textAnchor="middle" fill="#e8e8ed" fontSize="11" fontWeight="600">Execute Trade</text>
-            <line x1="196" y1="480" x2="670" y2="510" stroke="#00e676" strokeWidth="1.2" markerEnd="url(#arr-g)" />
-            <text x="420" y="502" textAnchor="middle" fill="#00e676" fontSize="9" fontFamily="JetBrains Mono, monospace" opacity="0.7">executeTrade(reportId)</text>
-
-            <rect x="670" y="498" width="200" height="40" rx="7" fill="#00e67610" stroke="#00e67640" strokeWidth="1" />
-            <text x="770" y="514" textAnchor="middle" fill="#6b6b80" fontSize="9" fontFamily="JetBrains Mono, monospace">PraxionVault</text>
-            <text x="770" y="530" textAnchor="middle" fill="#e8e8ed" fontSize="11" fontWeight="500">Verify Report → Swap</text>
-          </svg>
-        </div>
-      </section>
-
-      {/* ─── CONTRACTS ─── */}
-      <section className="max-w-7xl mx-auto px-6 py-20 relative z-10">
-        <div className="mb-12">
-          <span
-            className="text-xs tracking-[0.25em] uppercase text-chainlink"
-            style={{ fontFamily: "var(--font-jetbrains)" }}
-          >
-            On-chain
-          </span>
-          <h2 className="text-4xl md:text-5xl font-extrabold mt-3 tracking-tight" style={{ fontFamily: "var(--font-syne)" }}>
+      {/* ━━━ CONTRACTS ━━━ */}
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="mb-10">
+          <span className="label">On-chain</span>
+          <h2 className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight mt-2" style={{ fontFamily: "var(--font-display)" }}>
             Smart Contracts
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {CONTRACTS.map((c, i) => (
-            <div
-              key={c.name}
-              className="hover-lift bg-card border border-card-border rounded-xl p-7 group"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <h3
-                  className="text-base font-bold text-chainlink-light"
-                  style={{ fontFamily: "var(--font-jetbrains)" }}
-                >
-                  {c.name}
-                </h3>
-                <span
-                  className="text-[10px] tracking-[0.15em] uppercase px-2 py-0.5 rounded border border-card-border text-muted"
-                  style={{ fontFamily: "var(--font-jetbrains)" }}
-                >
-                  {c.role}
-                </span>
-              </div>
-              <p className="text-sm text-muted leading-relaxed" style={{ fontFamily: "var(--font-dm)" }}>
-                {c.desc}
+        <div className="grid md:grid-cols-2 gap-px rounded-xl overflow-hidden" style={{ background: "var(--border)" }}>
+          {CONTRACTS.map(([name, desc]) => (
+            <div key={name} className="p-6" style={{ background: "var(--card)" }}>
+              <h3 className="text-[14px] font-medium mb-2" style={{ fontFamily: "var(--font-mono)", color: "var(--blue-soft)" }}>
+                {name}
+              </h3>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted)", fontFamily: "var(--font-body)" }}>
+                {desc}
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─── TECH STACK ─── */}
-      <section className="border-t border-card-border/50 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-20">
-          <div className="text-center mb-10">
-            <span
-              className="text-xs tracking-[0.25em] uppercase text-chainlink"
-              style={{ fontFamily: "var(--font-jetbrains)" }}
-            >
-              Stack
-            </span>
-            <h2 className="text-3xl md:text-4xl font-extrabold mt-3 tracking-tight" style={{ fontFamily: "var(--font-syne)" }}>
-              Built With
-            </h2>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            {[
-              "Chainlink CRE",
-              "DON Consensus",
-              "Chainlink Data Feeds",
-              "Solidity",
-              "Foundry",
-              "TypeScript",
-              "Next.js",
-              "Base Sepolia",
-              "viem",
-            ].map((tech) => (
-              <span
-                key={tech}
-                className="px-4 py-2 bg-card border border-card-border rounded-full text-xs text-muted hover:text-foreground hover:border-chainlink/30 transition-all cursor-default"
-                style={{ fontFamily: "var(--font-jetbrains)" }}
-              >
-                {tech}
+      {/* ━━━ STACK ━━━ */}
+      <section style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="max-w-6xl mx-auto px-6 py-16 text-center">
+          <span className="label">Stack</span>
+          <h2 className="text-[clamp(1.6rem,3vw,2.2rem)] font-semibold tracking-tight mt-2 mb-8" style={{ fontFamily: "var(--font-display)" }}>
+            Built with
+          </h2>
+          <div className="flex flex-wrap justify-center gap-2">
+            {STACK.map((t) => (
+              <span key={t} className="px-3 py-1.5 rounded-md text-[12px]"
+                style={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                  fontFamily: "var(--font-mono)",
+                }}>
+                {t}
               </span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="border-t border-card-border/50 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-chainlink/10 border border-chainlink/30 flex items-center justify-center">
-              <span className="text-chainlink text-[9px] font-bold" style={{ fontFamily: "var(--font-jetbrains)" }}>P</span>
-            </div>
-            <span className="text-sm text-muted" style={{ fontFamily: "var(--font-dm)" }}>
-              Praxion — The safety layer between AI and capital
-            </span>
-          </div>
-          <a
-            href="https://github.com/ss251/praxion"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-            style={{ fontFamily: "var(--font-jetbrains)" }}
-          >
+      {/* ━━━ FOOTER ━━━ */}
+      <footer style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
+          <span className="text-[12px]" style={{ color: "var(--dim)", fontFamily: "var(--font-body)" }}>
+            Praxion — The safety layer between AI and capital
+          </span>
+          <a href="https://github.com/ss251/praxion" target="_blank" rel="noopener noreferrer"
+            className="text-[12px] hover:underline transition-all"
+            style={{ color: "var(--dim)", fontFamily: "var(--font-mono)" }}>
             github.com/ss251/praxion
           </a>
         </div>
