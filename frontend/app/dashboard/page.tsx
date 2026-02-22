@@ -51,6 +51,7 @@ interface EvalResult {
     agentStake: string;
     tradeNotionalUsd6: string;
     priceSources: {
+      chainlink: number;
       coinGecko: number;
       coinPaprika: number;
       consensus: number;
@@ -453,8 +454,12 @@ export default function Dashboard() {
                 {/* Price sources */}
                 {evalResult.details.priceSources && (
                   <div className="mt-3 pt-3 border-t border-card-border/50">
-                    <div className="text-xs text-foreground/40 mb-2">DON Price Consensus (2 sources)</div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="text-xs text-foreground/40 mb-2">DON Price Consensus (3 sources)</div>
+                    <div className="grid grid-cols-4 gap-3">
+                      <MiniStat
+                        label="Chainlink"
+                        value={`$${evalResult.details.priceSources.chainlink.toFixed(2)}`}
+                      />
                       <MiniStat
                         label="CoinGecko"
                         value={`$${evalResult.details.priceSources.coinGecko.toFixed(2)}`}
@@ -678,9 +683,10 @@ export default function Dashboard() {
             <div className="bg-card border border-card-border rounded-xl p-4 space-y-4">
               <StatusRow label="Network" value="Base Sepolia (84532)" />
               <StatusRow label="CRE Workflow" value="Active" active />
-              <StatusRow label="DON Consensus" value="2 Sources" active />
-              <StatusRow label="Price Feed 1" value="CoinGecko" />
-              <StatusRow label="Price Feed 2" value="CoinPaprika" />
+              <StatusRow label="DON Consensus" value="3 Sources" active />
+              <StatusRow label="Price Feed 1" value="Chainlink ETH/USD" />
+              <StatusRow label="Price Feed 2" value="CoinGecko" />
+              <StatusRow label="Price Feed 3" value="CoinPaprika" />
               <StatusRow
                 label="Forwarder"
                 value={shortHash(state.agent.address)}

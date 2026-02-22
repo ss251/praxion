@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // ─── Step 2: Check agent status ───
     steps.push("Checking agent status on-chain...");
 
-    const [isActive, agentStake, lastTradeTime, routerPrice] = await Promise.all([
+    const [isActive, agentStake, lastTradeTime, routerPrice, routerPriceRaw] = await Promise.all([
       publicClient.readContract({
         address: ADDRESSES.registry,
         abi: REGISTRY_ABI,
@@ -84,10 +84,19 @@ export async function POST(req: Request) {
         abi: ROUTER_ABI,
         functionName: "price",
       }),
+      publicClient.readContract({
+        address: ADDRESSES.router,
+        abi: ROUTER_ABI,
+        functionName: "priceRaw",
+      }),
     ]);
 
+    // Chainlink on-chain price (from router's price feed)
+    const chainlinkPrice = Number(routerPriceRaw[0]) / (10 ** Number(routerPriceRaw[1]));
+    const chainlinkUpdatedAt = Number(routerPriceRaw[2]);
+
     steps.push(`Agent active: ${isActive}, stake: ${agentStake}`);
-    steps.push(`Router price: $${routerPrice} per WETH`);
+    steps.push(`Chainlink ETH/USD (on-chain): $${chainlinkPrice.toFixed(2)} (updated ${new Date(chainlinkUpdatedAt * 1000).toISOString()})`);
 
     // ─── Step 3: Check cooldown ───
     const currentTime = BigInt(Math.floor(Date.now() / 1000));
@@ -117,11 +126,15 @@ export async function POST(req: Request) {
 
     steps.push(`Vault: USDC=${vaultUsdcBalance}, WETH=${vaultWethBalance}`);
 
-    // ─── Step 5: Fetch ETH price from 2 sources ───
-    steps.push("Fetching ETH price from 2 sources (DON consensus simulation)...");
+    // ─── Step 5: Fetch ETH price from 3 sources (DON consensus simulation) ───
+    steps.push("Fetching ETH price from 3 sources (Chainlink + CoinGecko + CoinPaprika)...");
 
-    let price1 = Number(routerPrice); // fallback to router price
-    let price2 = Number(routerPrice);
+    // Source 1: Chainlink on-chain price feed (already fetched above)
+    const priceChainlink = chainlinkPrice;
+
+    // Sources 2 & 3: HTTP price APIs
+    let priceCoinGecko = priceChainlink; // fallback
+    let priceCoinPaprika = priceChainlink; // fallback
 
     try {
       const [cg, cp] = await Promise.all([
@@ -132,18 +145,21 @@ export async function POST(req: Request) {
           r.json()
         ),
       ]);
-      if (cg?.ethereum?.usd) price1 = cg.ethereum.usd;
-      if (cp?.quotes?.USD?.price) price2 = cp.quotes.USD.price;
+      if (cg?.ethereum?.usd) priceCoinGecko = cg.ethereum.usd;
+      if (cp?.quotes?.USD?.price) priceCoinPaprika = cp.quotes.USD.price;
     } catch {
-      steps.push(`⚠ Price fetch failed, using router price $${routerPrice}`);
+      steps.push(`⚠ HTTP price fetch failed, using Chainlink price as fallback`);
     }
 
-    const avgPrice = (price1 + price2) / 2;
+    // DON consensus: median of 3 sources
+    const prices = [priceChainlink, priceCoinGecko, priceCoinPaprika].sort((a, b) => a - b);
+    const avgPrice = prices[1]; // median
     const expectedPriceUsd6 = BigInt(Math.round(avgPrice * 1e6));
 
-    steps.push(`Price source 1 (CoinGecko): $${price1.toFixed(2)}`);
-    steps.push(`Price source 2 (CoinPaprika): $${price2.toFixed(2)}`);
-    steps.push(`DON consensus price: $${avgPrice.toFixed(2)}`);
+    steps.push(`Price source 1 (Chainlink on-chain): $${priceChainlink.toFixed(2)}`);
+    steps.push(`Price source 2 (CoinGecko HTTP): $${priceCoinGecko.toFixed(2)}`);
+    steps.push(`Price source 3 (CoinPaprika HTTP): $${priceCoinPaprika.toFixed(2)}`);
+    steps.push(`DON consensus price (median of 3): $${avgPrice.toFixed(2)}`);
 
     // ─── Step 6: Evaluate constraints ───
     steps.push("Evaluating all constraints...");
@@ -158,9 +174,11 @@ export async function POST(req: Request) {
         ? Number((sellAmountBig * 10000n) / navUsd6)
         : 10000;
 
-    // Slippage: measured as oracle source price divergence (DON consensus metric)
+    // Slippage: measured as max oracle source price divergence (DON consensus metric)
     // In production CRE, each DON node fetches independently; divergence = execution risk
-    const priceDivergence = Math.abs(price1 - price2);
+    const maxPrice = Math.max(priceChainlink, priceCoinGecko, priceCoinPaprika);
+    const minPrice = Math.min(priceChainlink, priceCoinGecko, priceCoinPaprika);
+    const priceDivergence = maxPrice - minPrice;
     const slippageBps = avgPrice > 0
       ? Math.round((priceDivergence / avgPrice) * 10000)
       : 0;
@@ -281,8 +299,9 @@ export async function POST(req: Request) {
         tradeNotionalUsd6: sellAmount,
         routerPrice: Number(routerPrice),
         priceSources: {
-          coinGecko: price1,
-          coinPaprika: price2,
+          chainlink: priceChainlink,
+          coinGecko: priceCoinGecko,
+          coinPaprika: priceCoinPaprika,
           consensus: avgPrice,
         },
       },

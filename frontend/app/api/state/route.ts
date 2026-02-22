@@ -23,6 +23,7 @@ export async function GET() {
       totalShares,
       agentShares,
       routerPrice,
+      routerPriceRaw,
     ] = await Promise.all([
       publicClient.readContract({
         address: ADDRESSES.policy,
@@ -76,6 +77,11 @@ export async function GET() {
         abi: ROUTER_ABI,
         functionName: "price",
       }),
+      publicClient.readContract({
+        address: ADDRESSES.router,
+        abi: ROUTER_ABI,
+        functionName: "priceRaw",
+      }),
     ]);
 
     return NextResponse.json({
@@ -104,6 +110,11 @@ export async function GET() {
       router: {
         address: ADDRESSES.router,
         price: Number(routerPrice),
+        chainlinkFeed: ADDRESSES.chainlinkEthUsd,
+        chainlinkPriceRaw: routerPriceRaw[0].toString(),
+        chainlinkDecimals: Number(routerPriceRaw[1]),
+        chainlinkPrice: Number(routerPriceRaw[0]) / (10 ** Number(routerPriceRaw[1])),
+        chainlinkUpdatedAt: new Date(Number(routerPriceRaw[2]) * 1000).toISOString(),
       },
       addresses: ADDRESSES,
     });

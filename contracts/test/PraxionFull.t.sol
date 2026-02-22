@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {MockERC20}             from "./mocks/MockERC20.sol";
 import {MockRouter}            from "./mocks/MockRouter.sol";
+import {MockPriceFeed}         from "./mocks/MockPriceFeed.sol";
 import {PraxionPolicy}         from "../src/PraxionPolicy.sol";
 import {PraxionAgentRegistry}  from "../src/PraxionAgentRegistry.sol";
 import {PraxionSettlement}     from "../src/PraxionSettlement.sol";
@@ -12,6 +13,7 @@ import {PraxionVault}          from "../src/PraxionVault.sol";
 contract PraxionFullTest is Test {
     MockERC20  usdc;
     MockERC20  weth;
+    MockPriceFeed priceFeed;
     MockRouter router;
 
     PraxionPolicy        policy;
@@ -29,7 +31,8 @@ contract PraxionFullTest is Test {
     function setUp() public {
         usdc   = new MockERC20("USDC", "USDC", 6);
         weth   = new MockERC20("WETH", "WETH", 18);
-        router = new MockRouter(3000);
+        priceFeed = new MockPriceFeed(3000e8, 8); // $3000 with 8 decimals
+        router = new MockRouter(address(priceFeed));
 
         policy   = new PraxionPolicy();
         registry = new PraxionAgentRegistry(address(usdc), STAKE);

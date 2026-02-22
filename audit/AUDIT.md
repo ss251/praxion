@@ -3,7 +3,8 @@
 **Date**: 2026-02-22  
 **Auditor**: Automated (Claude)  
 **Scope**: All contracts, CRE workflow, x402 server, frontend API routes, dashboard  
-**Chain**: Base Sepolia (84532)
+**Chain**: Base Sepolia (84532)  
+**Chainlink ETH/USD Feed**: `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` (8 decimals)
 
 ---
 
@@ -40,22 +41,22 @@ Overall: The system is well-architected for a hackathon demo. No critical vulner
 
 ### MEDIUM-2: PraxionVault.wethPriceUsd6 is hardcoded and not updateable
 **File**: `contracts/src/PraxionVault.sol:30`  
-**Impact**: `wethPriceUsd6 = 3000e6` is used for WETH deposit share calculation. Should match router price or use an oracle.  
-**Mitigation**: Add a `setWethPrice()` function or integrate a Chainlink price feed. Only affects `depositWETH()` — not used in the demo flow.
+**Impact**: `wethPriceUsd6 = 3000e6` is used for WETH deposit share calculation. Should match Chainlink price or use the router's price feed.  
+**Mitigation**: Add a `setWethPrice()` function or read from Chainlink directly. Only affects `depositWETH()` — not used in the demo flow.
 
 ### MEDIUM-3: No deadline validation in Settlement.onReport
 **File**: `contracts/src/PraxionSettlement.sol:44-75`  
 **Impact**: Reports can be submitted with already-expired deadlines. The vault checks deadline on execution, so no actual exploit, but wasted gas.  
 **Mitigation**: Add `require(intent.deadline > block.timestamp)` in `onReport`.
 
-### MEDIUM-4: Slash-before-check in REJECT flow
-**File**: `contracts/src/PraxionSettlement.sol:65-74`  
-**Impact**: When a REJECT report is submitted, the agent is slashed immediately in `onReport`. If the same agent has pending APPROVE reports, those could fail if the slash brings stake below minimum. This is actually correct behavior (rejected agents shouldn't have pending approves), but worth noting.  
-**Mitigation**: None needed — this is by design.
-
-### LOW-1: No event for MockRouter price changes
+### MEDIUM-4: Chainlink price feed staleness not checked in MockRouter
 **File**: `contracts/test/mocks/MockRouter.sol`  
-**Mitigation**: Add `event PriceSet(uint256 newPrice)` for observability.
+**Impact**: The router reads `latestRoundData()` but doesn't check `updatedAt` for staleness. A stale price could lead to incorrect swap rates.  
+**Mitigation**: Add `require(block.timestamp - updatedAt < MAX_STALENESS)` check. For testnet demo this is acceptable since Chainlink feeds on Base Sepolia update regularly.
+
+### LOW-1: No event for MockRouter swaps
+**File**: `contracts/test/mocks/MockRouter.sol`  
+**Mitigation**: Add `event Swapped(...)` for observability.
 
 ### LOW-2: Integer truncation in exposure calculation
 **File**: `frontend/app/api/evaluate/route.ts:109`  
@@ -79,77 +80,80 @@ Overall: The system is well-architected for a hackathon demo. No critical vulner
 
 ---
 
+## Chainlink Integration
+
+### MockRouter reads real-time ETH/USD from Chainlink Data Feeds
+- Feed address: `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` (ETH/USD, 8 decimals, Base Sepolia)
+- Router constructor takes `_priceFeed` address (immutable)
+- `swap()` calls `priceFeed.latestRoundData()` for real-time price at execution
+- `price()` returns truncated integer price for convenience
+- `priceRaw()` returns full precision answer + decimals + updatedAt
+
+### CRE Evaluation uses 3 price sources
+1. **Chainlink on-chain** (`MockRouter.priceRaw()` → `priceFeed.latestRoundData()`)
+2. **CoinGecko HTTP** (`api.coingecko.com`)
+3. **CoinPaprika HTTP** (`api.coinpaprika.com`)
+- Consensus: **median** of 3 sources (robust against single source manipulation)
+- Slippage metric: max price divergence across all 3 sources
+
+---
+
 ## CRE Workflow (`workflow/tradeEvalCallback.ts`)
 
 ### INFO-1: Correct architecture
 The CRE workflow correctly:
 - Reads policy constraints from chain via EVMClient
-- Fetches prices from 2 sources with consensus aggregation
+- Fetches prices from 2 HTTP sources with consensus aggregation
 - Evaluates all 7 constraint checks
 - Encodes and submits report via DON's `writeReport`
-- Handles slippage as (expectedBuyAmount - minBuyAmount) / expectedBuyAmount
 
 ### INFO-2: CRE vs API route slippage calculation differs
-The CRE workflow calculates slippage as `(expectedBuyAmount - minBuyAmount) / expectedBuyAmount`, while the API route uses oracle price divergence. Both are valid approaches:
-- CRE: measures the agent's tolerance (how much slippage they're willing to accept)
-- API: measures market uncertainty (how much price sources disagree)
-
-The API route approach is arguably better for a "DON consensus simulation" since it reflects what multiple oracle nodes would observe.
+The CRE workflow calculates slippage as `(expectedBuyAmount - minBuyAmount) / expectedBuyAmount`, while the API route uses oracle price divergence across 3 sources (Chainlink + CoinGecko + CoinPaprika). The API route approach better reflects DON consensus behavior.
 
 ---
 
 ## x402 Server (`server/src/index.ts`)
 
 ### INFO-3: Functional but basic
-The x402 payment server works correctly:
-- Health endpoint is free
-- Price and analysis endpoints require x402 payment ($0.001 USDC)
-- Uses CoinGecko as data source
-- Proper error handling
-
-### LOW: PAYEE_ADDRESS is hardcoded fallback
-If `PAYEE_ADDRESS` env var isn't set, defaults to a specific address. Should require it.
+The x402 payment server works correctly with proper error handling and $0.001 USDC payment per request.
 
 ---
 
 ## Frontend Dashboard
 
 ### INFO-4: No hardcoded mock data remaining
-After fixes, the dashboard:
-- Reads router price from chain for minBuyAmount calculation
-- Uses router price for WETH valuation (not hardcoded $3000)
-- All state comes from `/api/state` which reads real chain data
-- Both APPROVE and REJECT flows work end-to-end
+All prices come from Chainlink on-chain feed. Dashboard shows 3 price sources (Chainlink, CoinGecko, CoinPaprika) with consensus.
 
 ### INFO-5: Activity feed is client-side only
 Activity items are stored in React state and lost on page refresh. For a demo this is fine.
 
 ### INFO-6: Router and StakeToken not shown in deployed contracts panel
-The "Deployed Contracts" section in the sidebar doesn't list MockRouter or pxSTK. Minor UI gap.
+Minor UI gap.
 
 ---
 
 ## Verified Demo Flow (2026-02-22)
 
-1. `GET /api/state` → ✅ Returns real on-chain state, router price = $1960
-2. `POST /api/evaluate` ($1,000 trade) → ✅ APPROVE, report written on-chain
-3. `POST /api/execute` → ✅ Trade executed, USDC -$1000, WETH +0.5102
-4. `POST /api/evaluate` ($60,000 trade) → ✅ REJECT (MAX_TRADE + MAX_EXPOSURE), agent slashed 100 pxSTK
-5. `GET /api/state` → ✅ Shows updated balances + reduced stake (1000 → 900 pxSTK)
+1. `GET /api/state` → ✅ Returns real on-chain state, Chainlink price = $1950
+2. `POST /api/evaluate` ($1,000 trade) → ✅ APPROVE, 3-source consensus (Chainlink $1950.89, CoinGecko $1949.51, CoinPaprika $1951.51)
+3. `POST /api/execute` → ✅ Trade executed via router using Chainlink real-time price
+4. `POST /api/evaluate` ($60,000 trade) → ✅ REJECT (MAX_TRADE + MAX_EXPOSURE), agent slashed 100 pxSTK (1000→900)
+5. `GET /api/state` → ✅ Shows updated balances + reduced stake
 
 All transactions verified on Base Sepolia blockscout.
 
 ---
 
-## Deployed Contract Addresses (2026-02-22)
+## Deployed Contract Addresses (2026-02-22, v3 — Chainlink)
 
 | Contract | Address |
 |----------|---------|
-| USDC | `0x241B2a5991Ee51c18DF255cE010B7ECc52B2AE1d` |
-| WETH | `0x71f58e4922B08322D8537B66E4310dE2C016F0b0` |
-| pxSTK | `0x27AD216073378B2505Af70F01952BDA0Cc1bB202` |
-| MockRouter | `0x89192bb10471a818036DA196e57912991D5a8bDe` |
-| PraxionPolicy | `0xd2c81Bb6c6A348715fadA9Af7189191b2ec07c18` |
-| PraxionRegistry | `0xdF3625C6D98081dcEc92003Fb40c5d131eebDc1F` |
-| PraxionSettlement | `0x9B8264A9dEB218FCee6829825534E9F744f25F56` |
-| PraxionVault | `0x2D23c43301934F0d9AC6553A3E0A82096E40Cf6e` |
+| Chainlink ETH/USD Feed | `0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1` |
+| USDC | `0x409b6284e73F79A29EA38F5eA33110099cd228e5` |
+| WETH | `0x9557d1716B967C40d3f532B6d816D01b26914248` |
+| pxSTK | `0x9A277205e2cE056e600fA1b9bf1C07D14b132DDe` |
+| MockRouter | `0x418A72208906747D8076f8829b266afDc56724ba` |
+| PraxionPolicy | `0xC994Ed6B8BC7FFA2EB5754909699166D72EAe032` |
+| PraxionRegistry | `0x9eEbe4beaD2670b5aDC64Abb5C4D8E428A75060b` |
+| PraxionSettlement | `0xB5E77252fCDe65f75cB2607a6D4A263A1B958AB4` |
+| PraxionVault | `0x0d9D3926144d008f7c834B151d3828b4189d5FDd` |

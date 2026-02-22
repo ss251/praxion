@@ -6,15 +6,17 @@ import { privateKeyToAccount } from "viem/accounts";
 // Deployed contract addresses (Base Sepolia)
 // ===========================
 export const ADDRESSES = {
-  usdc: "0x241B2a5991Ee51c18DF255cE010B7ECc52B2AE1d" as const,
-  weth: "0x71f58e4922B08322D8537B66E4310dE2C016F0b0" as const,
-  stakeToken: "0x27AD216073378B2505Af70F01952BDA0Cc1bB202" as const,
-  router: "0x89192bb10471a818036DA196e57912991D5a8bDe" as const,
-  policy: "0xd2c81Bb6c6A348715fadA9Af7189191b2ec07c18" as const,
-  registry: "0xdF3625C6D98081dcEc92003Fb40c5d131eebDc1F" as const,
-  settlement: "0x9B8264A9dEB218FCee6829825534E9F744f25F56" as const,
-  vault: "0x2D23c43301934F0d9AC6553A3E0A82096E40Cf6e" as const,
+  usdc: "0x9989309119e6e41838d31dba30e97F09419B93b2" as const,
+  weth: "0x2e746D6a2aEcF969F6523CE0A3D4BaC0e03C1F94" as const,
+  stakeToken: "0x6FA90e131FfC8BCb7c940bD9a686a1f7C8CFE869" as const,
+  router: "0x70670390143E80e2D93D8bb3787F675DeC3761a4" as const,
+  policy: "0x6ec4e63cA2c98d3f1EE9Da812551f5241baDAD8d" as const,
+  registry: "0xEAc52994285aD1508EC51D4E16EfaBBCB634587a" as const,
+  settlement: "0x35184a00e25Aa983e8e76Ba68867461b8FEc7bfE" as const,
+  vault: "0xF03035A13c29AAC87Bf3855A5dc54362e87126D5" as const,
   agent: "0x2080d5Bf878E0dF355A8105D011518b4EbA15717" as const,
+  chainlinkEthUsd: "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1" as const,
+  chainlinkUsdcUsd: "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165" as const,
 } as const;
 
 export const EXPLORER = "https://base-sepolia.blockscout.com";
@@ -135,6 +137,24 @@ export const ROUTER_ABI = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "priceRaw",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "answer", type: "int256" },
+      { name: "feedDecimals", type: "uint8" },
+      { name: "updatedAt", type: "uint256" },
+    ],
+  },
+  {
+    name: "priceFeed",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
   },
 ] as const;
 

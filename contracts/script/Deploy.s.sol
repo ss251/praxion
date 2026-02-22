@@ -21,8 +21,10 @@ contract Deploy is Script {
         MockERC20 weth  = new MockERC20("Wrapped Ether",   "WETH", 18);
         MockERC20 stake = new MockERC20("Praxion Stake",   "pxSTK", 18);
 
-        // 2. Mock router with realistic ETH price
-        MockRouter router = new MockRouter(1960);
+        // 2. Mock router with Chainlink ETH/USD price feed on Base Sepolia
+        // Feed: 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1 (ETH/USD, 8 decimals)
+        address CHAINLINK_ETH_USD = 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
+        MockRouter router = new MockRouter(CHAINLINK_ETH_USD);
 
         // 3. Policy
         PraxionPolicy policy = new PraxionPolicy();
