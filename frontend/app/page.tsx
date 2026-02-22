@@ -35,15 +35,47 @@ const CONTRACTS = [
   ["AgentRegistry", "Stake-based accountability. Slash on violation."],
 ];
 
-const STACK = [
-  "Chainlink CRE",
-  "Data Feeds",
-  "DON Consensus",
-  "Solidity",
-  "Foundry",
-  "Next.js",
-  "viem",
-  "Base Sepolia",
+const STACK: { name: string; href: string; icon: string }[] = [
+  {
+    name: "Chainlink CRE",
+    href: "https://docs.chain.link/cre",
+    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
+  },
+  {
+    name: "Data Feeds",
+    href: "https://docs.chain.link/data-feeds",
+    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
+  },
+  {
+    name: "DON Consensus",
+    href: "https://docs.chain.link/architecture-overview/off-chain-reporting",
+    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
+  },
+  {
+    name: "Solidity",
+    href: "https://soliditylang.org",
+    icon: "https://cdn.simpleicons.org/solidity/e4e4e8",
+  },
+  {
+    name: "Foundry",
+    href: "https://book.getfoundry.sh",
+    icon: "https://avatars.githubusercontent.com/u/99892494?s=64",
+  },
+  {
+    name: "Next.js",
+    href: "https://nextjs.org",
+    icon: "https://cdn.simpleicons.org/nextdotjs/e4e4e8",
+  },
+  {
+    name: "viem",
+    href: "https://viem.sh",
+    icon: "https://viem.sh/icon-light.png",
+  },
+  {
+    name: "Base",
+    href: "https://base.org",
+    icon: "https://cdn.simpleicons.org/coinbase/0052FF",
+  },
 ];
 
 /* ─── Page ─── */
@@ -276,17 +308,33 @@ export default function Home() {
           <h2 className="text-[clamp(1.6rem,3vw,2.2rem)] font-semibold tracking-tight mt-2 mb-8" style={{ fontFamily: "var(--font-display)" }}>
             Built with
           </h2>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-3">
             {STACK.map((t) => (
-              <span key={t} className="px-3 py-1.5 rounded-md text-[12px]"
+              <a
+                key={t.name}
+                href={t.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-[13px] transition-all duration-200 hover:scale-[1.03] hover:border-[var(--blue-soft)]"
                 style={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
-                  color: "var(--muted)",
-                  fontFamily: "var(--font-mono)",
-                }}>
-                {t}
-              </span>
+                  color: "var(--fg)",
+                  fontFamily: "var(--font-body)",
+                  fontWeight: 500,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={t.icon}
+                  alt={t.name}
+                  width={18}
+                  height={18}
+                  className="rounded-sm object-contain"
+                  style={{ filter: "brightness(0.9)" }}
+                />
+                {t.name}
+              </a>
             ))}
           </div>
         </div>
