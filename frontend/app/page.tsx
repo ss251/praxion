@@ -36,46 +36,14 @@ const CONTRACTS = [
 ];
 
 const STACK: { name: string; href: string; icon: string }[] = [
-  {
-    name: "Chainlink CRE",
-    href: "https://docs.chain.link/cre",
-    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
-  },
-  {
-    name: "Data Feeds",
-    href: "https://docs.chain.link/data-feeds",
-    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
-  },
-  {
-    name: "DON Consensus",
-    href: "https://docs.chain.link/architecture-overview/off-chain-reporting",
-    icon: "https://cdn.simpleicons.org/chainlink/375BD2",
-  },
-  {
-    name: "Solidity",
-    href: "https://soliditylang.org",
-    icon: "https://cdn.simpleicons.org/solidity/e4e4e8",
-  },
-  {
-    name: "Foundry",
-    href: "https://book.getfoundry.sh",
-    icon: "https://avatars.githubusercontent.com/u/99892494?s=64",
-  },
-  {
-    name: "Next.js",
-    href: "https://nextjs.org",
-    icon: "https://cdn.simpleicons.org/nextdotjs/e4e4e8",
-  },
-  {
-    name: "viem",
-    href: "https://viem.sh",
-    icon: "https://viem.sh/icon-light.png",
-  },
-  {
-    name: "Base",
-    href: "https://base.org",
-    icon: "https://cdn.simpleicons.org/coinbase/0052FF",
-  },
+  { name: "Chainlink CRE", href: "https://docs.chain.link/cre", icon: "/icons/chainlink.svg" },
+  { name: "Data Feeds", href: "https://docs.chain.link/data-feeds", icon: "/icons/chainlink.svg" },
+  { name: "DON Consensus", href: "https://docs.chain.link/architecture-overview/off-chain-reporting", icon: "/icons/chainlink.svg" },
+  { name: "Solidity", href: "https://soliditylang.org", icon: "/icons/solidity.svg" },
+  { name: "Foundry", href: "https://book.getfoundry.sh", icon: "/icons/foundry.svg" },
+  { name: "Next.js", href: "https://nextjs.org", icon: "/icons/nextjs.svg" },
+  { name: "viem", href: "https://viem.sh", icon: "/icons/viem.png" },
+  { name: "Base", href: "https://base.org", icon: "/icons/base.svg" },
 ];
 
 /* ─── Page ─── */
@@ -328,10 +296,10 @@ export default function Home() {
                 <img
                   src={t.icon}
                   alt={t.name}
-                  width={18}
-                  height={18}
-                  className="rounded-sm object-contain"
-                  style={{ filter: "brightness(0.9)" }}
+                  width={16}
+                  height={16}
+                  className="rounded-sm shrink-0"
+                  style={{ width: 16, height: 16, objectFit: "contain" }}
                 />
                 {t.name}
               </a>
