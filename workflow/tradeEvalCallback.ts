@@ -398,10 +398,13 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
       functionName: "latestRoundData",
       data: bytesToHex(chainlinkResult.data),
     }) as any;
-    // Chainlink ETH/USD has 8 decimals
-    const chainlinkPriceUsd = Number(chainlinkRaw.answer) / 1e8;
+    // latestRoundData returns [roundId, answer, startedAt, updatedAt, answeredInRound]
+    // answer is at index 1 (or .answer). Try both access patterns.
+    const rawAnswer = chainlinkRaw[1] ?? chainlinkRaw.answer ?? chainlinkRaw;
+    // Chainlink ETH/USD has 8 decimals — convert BigInt safely
+    const chainlinkPriceUsd = parseFloat(rawAnswer.toString()) / 1e8;
 
-    runtime.log(`[Step 3a] Chainlink on-chain ETH/USD: $${chainlinkPriceUsd.toFixed(2)}`);
+    runtime.log(`[Step 3a] Chainlink on-chain ETH/USD: $${chainlinkPriceUsd.toFixed(2)} (raw: ${rawAnswer})`);
 
     // 3b. CoinGecko price (HTTP with DON consensus)
     const httpClient = new cre.capabilities.HTTPClient();
@@ -416,28 +419,41 @@ export function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): s
 
     runtime.log(`[Step 3b] CoinGecko ETH/USD: $${price1.priceUsd}`);
 
-    // 3c. CoinPaprika price (HTTP with DON consensus)
-    const price2 = httpClient
-      .sendRequest(
-        runtime,
-        buildPriceRequest(runtime.config.priceFeedUrl2),
-        consensusIdenticalAggregation<PriceResult>()
-      )(runtime.config)
-      .result();
+    // 3c. CoinPaprika price (HTTP with DON consensus) — optional, may timeout
+    let price2: PriceResult = { priceUsd: 0 };
+    let hasCoinPaprika = false;
+    try {
+      price2 = httpClient
+        .sendRequest(
+          runtime,
+          buildPriceRequest(runtime.config.priceFeedUrl2),
+          consensusIdenticalAggregation<PriceResult>()
+        )(runtime.config)
+        .result();
+      hasCoinPaprika = price2.priceUsd > 0;
+      runtime.log(`[Step 3c] CoinPaprika ETH/USD: $${price2.priceUsd}`);
+    } catch (e) {
+      runtime.log(`[Step 3c] CoinPaprika unavailable (timeout), using 2-source consensus`);
+    }
 
-    runtime.log(`[Step 3c] CoinPaprika ETH/USD: $${price2.priceUsd}`);
-
-    // 3d. Median of 3 sources (DON consensus pattern)
-    const prices = [chainlinkPriceUsd, price1.priceUsd, price2.priceUsd].sort((a, b) => a - b);
-    const medianPrice = prices[1]; // Middle value = median
+    // 3d. Consensus price (median of available sources)
+    const prices = hasCoinPaprika
+      ? [chainlinkPriceUsd, price1.priceUsd, price2.priceUsd].sort((a, b) => a - b)
+      : [chainlinkPriceUsd, price1.priceUsd].sort((a, b) => a - b);
+    // Median: middle value for 3 sources, average for 2
+    const medianPrice = prices.length === 3
+      ? prices[1]
+      : (prices[0] + prices[1]) / 2;
     const expectedPriceUsd6 = BigInt(Math.round(medianPrice * 1e6));
 
     // Calculate max divergence between sources (slippage metric)
     const maxPrice = Math.max(...prices);
     const minPrice = Math.min(...prices);
-    const sourceDivergenceBps = Math.round(((maxPrice - minPrice) / medianPrice) * 10000);
+    const sourceDivergenceBps = medianPrice > 0
+      ? Math.round(((maxPrice - minPrice) / medianPrice) * 10000)
+      : 0;
 
-    runtime.log(`[Step 3d] Median price: $${medianPrice.toFixed(2)} (${expectedPriceUsd6} USD6)`);
+    runtime.log(`[Step 3d] Consensus price (${prices.length} sources): $${medianPrice.toFixed(2)} (${expectedPriceUsd6} USD6)`);
     runtime.log(`[Step 3d] Source divergence: ${sourceDivergenceBps} bps`);
     // ─── Step 4: Evaluate constraints ───
     runtime.log("[Step 4] Evaluating constraints...");
