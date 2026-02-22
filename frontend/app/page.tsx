@@ -308,6 +308,54 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ━━━ DEPLOYED CONTRACTS ━━━ */}
+      <section style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <span className="label">On-Chain</span>
+            <h2 className="text-[clamp(1.6rem,3vw,2.2rem)] font-semibold tracking-tight mt-2" style={{ fontFamily: "var(--font-display)" }}>
+              Deployed Contracts
+            </h2>
+            <p className="text-[13px] mt-2" style={{ color: "var(--muted)", fontFamily: "var(--font-body)" }}>
+              Base Sepolia — All contracts verified and live
+            </p>
+          </div>
+          <div className="grid gap-2 max-w-3xl mx-auto">
+            {[
+              { name: "PraxionVault", addr: "0xF03035A13c29AAC87Bf3855A5dc54362e87126D5", role: "Capital custody + trade execution" },
+              { name: "PraxionPolicy", addr: "0x6ec4e63cA2c98d3f1EE9Da812551f5241baDAD8d", role: "Constraint parameters" },
+              { name: "PraxionSettlement", addr: "0x35184a00e25Aa983e8e76Ba68867461b8FEc7bfE", role: "Verdict storage + slashing" },
+              { name: "AgentRegistry", addr: "0xEAc52994285aD1508EC51D4E16EfaBBCB634587a", role: "Stake management" },
+              { name: "MockRouter", addr: "0x70670390143E80e2D93D8bb3787F675DeC3761a4", role: "Chainlink ETH/USD feed reader" },
+              { name: "USDC (Mock)", addr: "0x9989309119e6e41838d31dba30e97F09419B93b2", role: "Stablecoin" },
+              { name: "WETH (Mock)", addr: "0x2e746D6a2aEcF969F6523CE0A3D4BaC0e03C1F94", role: "Wrapped Ether" },
+              { name: "Chainlink ETH/USD", addr: "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1", role: "Live data feed (8 decimals)" },
+            ].map((c) => (
+              <a
+                key={c.name}
+                href={`https://base-sepolia.blockscout.com/address/${c.addr}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg transition-all duration-200 hover:border-[var(--blue-soft)] group"
+                style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-[13px] font-medium shrink-0" style={{ fontFamily: "var(--font-mono)", color: "var(--blue-soft)" }}>
+                    {c.name}
+                  </span>
+                  <span className="text-[11px] hidden sm:block" style={{ color: "var(--dim)", fontFamily: "var(--font-body)" }}>
+                    {c.role}
+                  </span>
+                </div>
+                <code className="text-[11px] shrink-0 group-hover:text-[var(--blue-soft)] transition-colors" style={{ color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                  {c.addr.slice(0, 6)}…{c.addr.slice(-4)} ↗
+                </code>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ━━━ FOOTER ━━━ */}
       <footer style={{ borderTop: "1px solid var(--border)" }}>
         <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
